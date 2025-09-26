@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modern Cloud Calendar</title>
+    <title>Advanced Cloud Calendar</title>
     <!-- Import Firebase Libraries -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
@@ -339,11 +339,11 @@
         }
 
         /* Month View Styles */
-        .month-view {
+        .month-view, .week-view {
             display: none;
         }
         
-        .month-view-header {
+        .month-view-header, .week-view-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -360,7 +360,7 @@
         }
         
         .month-day {
-            min-height: 120px;
+            min-height: 140px;
             background: white;
             border-radius: var(--border-radius);
             padding: 12px;
@@ -402,8 +402,8 @@
         }
         
         .month-day-content {
-            font-size: 0.8rem;
-            max-height: 80px;
+            font-size: 0.85rem;
+            max-height: 100px;
             overflow-y: auto;
             padding-right: 5px;
         }
@@ -424,12 +424,81 @@
             margin-bottom: 4px;
             padding: 3px 5px;
             border-left: 3px solid var(--success);
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             background: #f8f9fa;
             border-radius: 4px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+        }
+
+        /* Week View Styles */
+        .week-view-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 15px;
+        }
+        
+        .week-day {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: var(--transition);
+            border: 1px solid #f0f0f0;
+            min-height: 200px;
+        }
+        
+        .week-day:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .week-day.today {
+            border: 2px solid var(--primary);
+            background: linear-gradient(135deg, #f0f8ff, #e1f5fe);
+        }
+        
+        .week-day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .week-day-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: var(--dark);
+        }
+        
+        .week-day-date {
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .week-day-content {
+            font-size: 0.9rem;
+        }
+        
+        .week-event {
+            margin-bottom: 8px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            color: white;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+        
+        .week-activity {
+            margin-bottom: 6px;
+            padding: 5px 8px;
+            border-left: 3px solid var(--success);
+            font-size: 0.85rem;
+            background: #f8f9fa;
+            border-radius: 4px;
         }
 
         .modal {
@@ -533,34 +602,29 @@
                 margin-left: 0;
                 width: 100%;
                 justify-content: center;
+                flex-wrap: wrap;
             }
             
             .year-grid {
                 grid-template-columns: 1fr;
             }
             
-            .month-view-grid {
-                grid-template-columns: repeat(7, minmax(0, 1fr));
-                gap: 5px;
+            .month-view-grid, .week-view-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
             }
             
-            .month-day {
-                min-height: 100px;
-                padding: 8px;
+            .month-day, .week-day {
+                min-height: 120px;
+                padding: 10px;
             }
             
-            .month-day-number {
+            .month-day-number, .week-day-name {
                 font-size: 1rem;
             }
             
-            .month-day-content {
-                font-size: 0.7rem;
-                max-height: 70px;
-            }
-            
-            .month-event, .month-activity {
-                font-size: 0.65rem;
-                padding: 2px 4px;
+            .month-day-content, .week-day-content {
+                font-size: 0.8rem;
             }
             
             .sidebar-section {
@@ -569,36 +633,18 @@
         }
         
         @media (max-width: 480px) {
-            .month-view-grid {
-                grid-template-columns: repeat(7, minmax(0, 1fr));
-                gap: 3px;
+            .month-day, .week-day {
+                min-height: 100px;
+                padding: 8px;
             }
             
-            .month-day {
-                min-height: 80px;
-                padding: 5px;
+            .month-day-content, .week-day-content {
+                font-size: 0.75rem;
             }
             
-            .month-day-number {
-                font-size: 0.9rem;
-            }
-            
-            .month-day-content {
-                display: none;
-            }
-            
-            .month-day.has-content::after {
-                content: "•••";
-                position: absolute;
-                bottom: 3px;
-                right: 3px;
-                color: var(--primary);
-                font-weight: bold;
-            }
-            
-            .days-header div {
-                font-size: 0.8rem;
-                padding: 5px 0;
+            .month-event, .month-activity, .week-event, .week-activity {
+                font-size: 0.7rem;
+                padding: 3px 6px;
             }
         }
         
@@ -676,6 +722,17 @@
         .back-to-year:hover {
             text-decoration: underline;
         }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--dark);
+        }
     </style>
 </head>
 <body>
@@ -683,8 +740,12 @@
 <!-- LOGIN SCREEN -->
 <div id="login-container" class="login-container">
     <h2><i class="fas fa-calendar-alt"></i> Login to Your Calendar</h2>
-    <input type="email" id="email" placeholder="Email" style="width: calc(100% - 20px); font-size: 16px;">
-    <input type="password" id="password" placeholder="Password" style="width: calc(100% - 20px); font-size: 16px;">
+    <div class="form-group">
+        <input type="email" id="email" placeholder="Email" style="width: 100%; font-size: 16px;">
+    </div>
+    <div class="form-group">
+        <input type="password" id="password" placeholder="Password" style="width: 100%; font-size: 16px;">
+    </div>
     <button id="login-btn" style="width: 100%; font-size: 16px;"><i class="fas fa-sign-in-alt"></i> Login</button>
     <button id="test-login-btn" style="width: 100%; font-size: 16px; margin-top: 10px; background-color: var(--success);"><i class="fas fa-flask"></i> Test Mode (Skip Login)</button>
     <p id="login-error" style="color: var(--warning); margin-top: 15px;"></p>
@@ -698,8 +759,9 @@
                 <h1><i class="fas fa-calendar"></i> <span id="calendar-title">Yearly Calendar</span></h1>
                 <input type="number" id="year-input" value="2025" min="2000" max="2100">
                 <div class="view-toggle">
-                    <button id="year-view-btn" class="active"><i class="fas fa-th-large"></i> Year View</button>
-                    <button id="month-view-btn"><i class="fas fa-calendar-week"></i> Month View</button>
+                    <button id="year-view-btn" class="active"><i class="fas fa-th-large"></i> Year</button>
+                    <button id="month-view-btn"><i class="fas fa-calendar-alt"></i> Month</button>
+                    <button id="week-view-btn"><i class="fas fa-calendar-week"></i> Week</button>
                 </div>
                 <button id="logout-btn" style="margin-left: auto;"><i class="fas fa-sign-out-alt"></i> Logout</button>
             </div>
@@ -729,37 +791,66 @@
                 </div>
                 <div class="month-view-grid" id="month-days-grid"></div>
             </div>
+            
+            <!-- Week View -->
+            <div class="week-view" id="week-calendar">
+                <div class="week-view-header">
+                    <button id="prev-week-btn"><i class="fas fa-chevron-left"></i> Previous Week</button>
+                    <h2 id="week-title">Week of Month Day, Year</h2>
+                    <button id="next-week-btn">Next Week <i class="fas fa-chevron-right"></i></button>
+                </div>
+                <div class="week-view-grid" id="week-days-grid"></div>
+            </div>
         </main>
         
         <aside class="sidebar">
              <div class="sidebar-section">
                 <h3><i class="fas fa-tags"></i> Manage Event Types</h3>
-                <input type="text" id="event-type-name" placeholder="New/Update Event Name">
-                <input type="color" id="event-type-color" value="#ffc107">
-                <label><input type="checkbox" id="event-summarize-check"> Summarize?</label>
-                <button id="add-event-type-btn"><i class="fas fa-plus"></i> Add Event</button>
+                <div class="form-group">
+                    <input type="text" id="event-type-name" placeholder="Event Name">
+                </div>
+                <div class="form-group">
+                    <label for="event-type-color">Color:</label>
+                    <input type="color" id="event-type-color" value="#ffc107">
+                </div>
+                <div class="form-group">
+                    <label><input type="checkbox" id="event-summarize-check"> Summarize in reports?</label>
+                </div>
+                <button id="add-event-type-btn"><i class="fas fa-plus"></i> Add Event Type</button>
                 <div id="event-list" class="item-list"></div>
             </div>
             <div class="sidebar-section">
                 <h3><i class="fas fa-tasks"></i> Manage Daily Activities</h3>
-                <input type="text" id="activity-name" placeholder="New/Update Activity Name">
-                <select id="activity-type">
-                    <option value="boolean">Yes/No</option>
-                    <option value="quantity">Quantity</option>
-                </select>
-                <input type="text" id="activity-unit" placeholder="Unit (e.g., Days)">
+                <div class="form-group">
+                    <input type="text" id="activity-name" placeholder="Activity Name">
+                </div>
+                <div class="form-group">
+                    <label for="activity-type">Type:</label>
+                    <select id="activity-type">
+                        <option value="boolean">Yes/No</option>
+                        <option value="quantity">Quantity</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="activity-unit" placeholder="Unit (e.g., Days)">
+                </div>
                 <button id="add-activity-btn"><i class="fas fa-plus"></i> Add Activity</button>
                 <div id="activity-list" class="item-list"></div>
             </div>
              <div class="sidebar-section">
                 <h3><i class="fas fa-chart-bar"></i> View Summaries</h3>
-                <select id="summary-period-filter">
-                    <option value="yearly">Yearly Summary</option>
-                    <option value="monthly">Monthly Summary</option>
-                </select>
-                <select id="summary-month-filter" style="display: none;">
-                    <option value="all">Full Year</option>
-                </select>
+                <div class="form-group">
+                    <label for="summary-period-filter">Summary Type:</label>
+                    <select id="summary-period-filter">
+                        <option value="yearly">Yearly Summary</option>
+                        <option value="monthly">Monthly Summary</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <select id="summary-month-filter" style="display: none;">
+                        <option value="all">Full Year</option>
+                    </select>
+                </div>
                 <button id="generate-summary-btn"><i class="fas fa-calculator"></i> Generate Summary</button>
                 <div id="summary-output"></div>
                 <button id="save-summary-btn" style="display: none; margin-top: 10px;"><i class="fas fa-save"></i> Save Multipliers</button>
@@ -772,10 +863,14 @@
 <div id="data-modal" class="modal">
     <div class="modal-content">
         <h3 id="modal-title"><i class="fas fa-edit"></i> Edit Day:</h3>
-        <label for="event-type-select">Event Type:</label>
-        <select id="event-type-select"></select>
-        <label for="event-note">Note for this Day:</label>
-        <textarea id="event-note" rows="3" placeholder="Add any details here (visible only in this view)..."></textarea>
+        <div class="form-group">
+            <label for="event-type-select">Event Type:</label>
+            <select id="event-type-select"></select>
+        </div>
+        <div class="form-group">
+            <label for="event-note">Note for this Day:</label>
+            <textarea id="event-note" rows="3" placeholder="Add any details here..."></textarea>
+        </div>
         <hr>
         <h4><i class="fas fa-check-circle"></i> Daily Activities</h4>
         <div id="activities-checklist"></div>
@@ -878,25 +973,39 @@ document.addEventListener('DOMContentLoaded', function() {
         let currentView = 'year';
         let currentMonth = new Date().getMonth();
         let currentYear = new Date().getFullYear();
+        let currentWeekStart = getWeekStartDate(new Date());
 
         // View toggle logic
         const yearViewBtn = document.getElementById('year-view-btn');
         const monthViewBtn = document.getElementById('month-view-btn');
+        const weekViewBtn = document.getElementById('week-view-btn');
         const yearView = document.getElementById('year-calendar');
         const monthView = document.getElementById('month-calendar');
+        const weekView = document.getElementById('week-calendar');
         const calendarTitle = document.getElementById('calendar-title');
         const summaryPeriodFilter = document.getElementById('summary-period-filter');
         const summaryMonthFilter = document.getElementById('summary-month-filter');
         const yearQuickNav = document.getElementById('year-quick-nav');
         const backToYear = document.getElementById('back-to-year');
 
+        // Helper function to get the start of the week (Sunday)
+        function getWeekStartDate(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day;
+            return new Date(d.setDate(diff));
+        }
+
+        // Set up view toggles
         yearViewBtn.addEventListener('click', () => {
-            if (currentView === 'month') {
+            if (currentView !== 'year') {
                 currentView = 'year';
                 yearView.style.display = 'grid';
                 monthView.style.display = 'none';
+                weekView.style.display = 'none';
                 yearViewBtn.classList.add('active');
                 monthViewBtn.classList.remove('active');
+                weekViewBtn.classList.remove('active');
                 calendarTitle.textContent = 'Yearly Calendar';
                 summaryPeriodFilter.style.display = 'inline-block';
                 summaryMonthFilter.style.display = 'none';
@@ -912,18 +1021,38 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         monthViewBtn.addEventListener('click', () => {
-            if (currentView === 'year') {
+            if (currentView !== 'month') {
                 currentView = 'month';
                 yearView.style.display = 'none';
                 monthView.style.display = 'block';
+                weekView.style.display = 'none';
                 yearViewBtn.classList.remove('active');
                 monthViewBtn.classList.add('active');
+                weekViewBtn.classList.remove('active');
                 calendarTitle.textContent = 'Monthly Calendar';
                 summaryPeriodFilter.style.display = 'inline-block';
                 summaryMonthFilter.style.display = 'inline-block';
                 yearQuickNav.style.display = 'none';
                 backToYear.style.display = 'block';
                 generateMonthView(currentYear, currentMonth);
+            }
+        });
+
+        weekViewBtn.addEventListener('click', () => {
+            if (currentView !== 'week') {
+                currentView = 'week';
+                yearView.style.display = 'none';
+                monthView.style.display = 'none';
+                weekView.style.display = 'block';
+                yearViewBtn.classList.remove('active');
+                monthViewBtn.classList.remove('active');
+                weekViewBtn.classList.add('active');
+                calendarTitle.textContent = 'Weekly Calendar';
+                summaryPeriodFilter.style.display = 'inline-block';
+                summaryMonthFilter.style.display = 'none';
+                yearQuickNav.style.display = 'none';
+                backToYear.style.display = 'none';
+                generateWeekView(currentWeekStart);
             }
         });
 
@@ -953,35 +1082,256 @@ document.addEventListener('DOMContentLoaded', function() {
             generateMonthView(currentYear, currentMonth);
         });
 
+        // Week navigation
+        document.getElementById('prev-week-btn').addEventListener('click', () => {
+            currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+            generateWeekView(currentWeekStart);
+        });
+
+        document.getElementById('next-week-btn').addEventListener('click', () => {
+            currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+            generateWeekView(currentWeekStart);
+        });
+
         // Summary period filter
         summaryPeriodFilter.addEventListener('change', function() {
             summaryMonthFilter.style.display = this.value === 'monthly' ? 'inline-block' : 'none';
         });
 
-        // Rest of the application logic remains the same as before
-        // (Event type management, activity type management, etc.)
-        // ... [Previous code for event and activity management]
+        // Event type management
+        const eventNameInput = document.getElementById('event-type-name');
+        const eventColorInput = document.getElementById('event-type-color');
+        const eventSummarizeCheck = document.getElementById('event-summarize-check');
+        const addEventTypeBtn = document.getElementById('add-event-type-btn');
+        const eventListContainer = document.getElementById('event-list');
 
-        // For brevity, I've omitted the detailed implementation of event/activity management
-        // and Firebase interactions, but they would be included in a full implementation
+        const resetEventForm = () => {
+            editingEventId = null;
+            eventNameInput.value = '';
+            eventColorInput.value = '#ffc107';
+            eventSummarizeCheck.checked = false;
+            addEventTypeBtn.innerHTML = '<i class="fas fa-plus"></i> Add Event Type';
+        };
 
-        // Generate quick navigation for year view
-        function generateQuickNav() {
-            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            yearQuickNav.innerHTML = '';
+        addEventTypeBtn.addEventListener('click', async () => {
+            const name = eventNameInput.value.trim();
+            if (!name) {
+                showNotification('Please enter an event name', true);
+                return;
+            }
             
-            monthNames.forEach((name, index) => {
-                const button = document.createElement('button');
-                button.textContent = name;
-                if (index === currentMonth) {
-                    button.classList.add('active');
+            const data = { 
+                name: name, 
+                event_type_color: eventColorInput.value, 
+                event_summarize_check: eventSummarizeCheck.checked 
+            };
+            
+            if (testMode) {
+                // Test mode: Just update local state
+                const id = editingEventId || 'test-' + Date.now();
+                localEventTypes[id] = { ...data, id: id };
+                updateEventList();
+                resetEventForm();
+                showNotification(`Event type "${name}" ${editingEventId ? 'updated' : 'added'} successfully (test mode)`);
+            } else {
+                // Normal mode: Save to Firestore
+                try {
+                    const docRef = editingEventId ? db.collection('event_types').doc(editingEventId) : db.collection('event_types').doc();
+                    await docRef.set(data, { merge: true });
+                    resetEventForm();
+                    showNotification(`Event type "${name}" ${editingEventId ? 'updated' : 'added'} successfully`);
+                } catch (error) {
+                    showNotification('Error saving event type: ' + error.message, true);
                 }
-                button.addEventListener('click', () => {
-                    currentMonth = index;
-                    monthViewBtn.click();
-                });
-                yearQuickNav.appendChild(button);
+            }
+        });
+
+        function updateEventList() {
+            eventListContainer.innerHTML = '';
+            Object.values(localEventTypes).forEach(event => {
+                eventListContainer.innerHTML += `
+                    <div class="list-item">
+                        <div class="legend-color-box" style="background-color: ${event.event_type_color};"></div>
+                        <span>${event.name}${event.event_summarize_check ? ' (S)' : ''}</span>
+                        <button class="edit-btn" data-id="${event.id}"><i class="fas fa-edit"></i> Edit</button>
+                        <button class="delete-btn" data-id="${event.id}"><i class="fas fa-trash"></i> Delete</button>
+                    </div>
+                `;
             });
+            populateEventTypeDropdown();
+        }
+
+        eventListContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('edit-btn') || e.target.parentElement.classList.contains('edit-btn')) {
+                const btn = e.target.classList.contains('edit-btn') ? e.target : e.target.parentElement;
+                const id = btn.dataset.id;
+                const event = localEventTypes[id];
+                editingEventId = id;
+                eventNameInput.value = event.name;
+                eventColorInput.value = event.event_type_color;
+                eventSummarizeCheck.checked = event.event_summarize_check;
+                addEventTypeBtn.innerHTML = '<i class="fas fa-edit"></i> Update Event Type';
+            } else if (e.target.classList.contains('delete-btn') || e.target.parentElement.classList.contains('delete-btn')) {
+                const btn = e.target.classList.contains('delete-btn') ? e.target : e.target.parentElement;
+                const id = btn.dataset.id;
+                if (confirm("Delete this event type?")) {
+                    if (testMode) {
+                        delete localEventTypes[id];
+                        if(editingEventId === id) resetEventForm();
+                        updateEventList();
+                        showNotification('Event type deleted (test mode)');
+                    } else {
+                        db.collection('event_types').doc(id).delete().then(() => {
+                            if(editingEventId === id) resetEventForm();
+                            showNotification('Event type deleted');
+                        }).catch(error => {
+                            showNotification('Error deleting event type: ' + error.message, true);
+                        });
+                    }
+                }
+            }
+        });
+
+        // Activity type management
+        const activityNameInput = document.getElementById('activity-name');
+        const activityTypeSelect = document.getElementById('activity-type');
+        const activityUnitInput = document.getElementById('activity-unit');
+        const addActivityBtn = document.getElementById('add-activity-btn');
+        const activityListContainer = document.getElementById('activity-list');
+
+        activityTypeSelect.addEventListener('change', () => {
+            if (activityTypeSelect.value === 'quantity') {
+                activityUnitInput.placeholder = 'Unit (e.g., kg, L)';
+            } else {
+                activityUnitInput.placeholder = 'Unit (e.g., Days)';
+            }
+        });
+        
+        const resetActivityForm = () => {
+            editingActivityId = null;
+            activityNameInput.value = '';
+            activityTypeSelect.value = 'boolean';
+            activityUnitInput.value = '';
+            addActivityBtn.innerHTML = '<i class="fas fa-plus"></i> Add Activity';
+            activityTypeSelect.dispatchEvent(new Event('change'));
+        };
+
+        addActivityBtn.addEventListener('click', async () => {
+            const name = activityNameInput.value.trim();
+            if (!name) {
+                showNotification('Please enter an activity name', true);
+                return;
+            }
+            
+            const data = { 
+                name: name, 
+                activity_type: activityTypeSelect.value, 
+                activity_unit: activityUnitInput.value.trim() 
+            };
+            
+            if (testMode) {
+                // Test mode: Just update local state
+                const id = editingActivityId || 'test-' + Date.now();
+                localActivities[id] = { ...data, id: id };
+                updateActivityList();
+                resetActivityForm();
+                showNotification(`Activity "${name}" ${editingActivityId ? 'updated' : 'added'} successfully (test mode)`);
+            } else {
+                // Normal mode: Save to Firestore
+                try {
+                    const docRef = editingActivityId ? db.collection('activity_types').doc(editingActivityId) : db.collection('activity_types').doc();
+                    await docRef.set(data, { merge: true });
+                    resetActivityForm();
+                    showNotification(`Activity "${name}" ${editingActivityId ? 'updated' : 'added'} successfully`);
+                } catch (error) {
+                    showNotification('Error saving activity: ' + error.message, true);
+                }
+            }
+        });
+
+        function updateActivityList() {
+            activityListContainer.innerHTML = '';
+            Object.values(localActivities).forEach(activity => {
+                const unitText = activity.activity_unit ? `, ${activity.activity_unit}` : '';
+                activityListContainer.innerHTML += `
+                    <div class="list-item">
+                        <span>${activity.name} (${activity.activity_type}${unitText})</span>
+                        <button class="edit-btn" data-id="${activity.id}"><i class="fas fa-edit"></i> Edit</button>
+                        <button class="delete-btn" data-id="${activity.id}"><i class="fas fa-trash"></i> Delete</button>
+                    </div>
+                `;
+            });
+        }
+        
+        activityListContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('edit-btn') || e.target.parentElement.classList.contains('edit-btn')) {
+                const btn = e.target.classList.contains('edit-btn') ? e.target : e.target.parentElement;
+                const id = btn.dataset.id;
+                const activity = localActivities[id];
+                editingActivityId = id;
+                activityNameInput.value = activity.name;
+                activityTypeSelect.value = activity.activity_type;
+                addActivityBtn.innerHTML = '<i class="fas fa-edit"></i> Update Activity';
+                activityUnitInput.value = activity.activity_unit || '';
+                activityTypeSelect.dispatchEvent(new Event('change'));
+            } else if (e.target.classList.contains('delete-btn') || e.target.parentElement.classList.contains('delete-btn')) {
+                const btn = e.target.classList.contains('delete-btn') ? e.target : e.target.parentElement;
+                const id = btn.dataset.id;
+                if (confirm("Delete this activity type?")) {
+                    if (testMode) {
+                        delete localActivities[id];
+                        if(editingActivityId === id) resetActivityForm();
+                        updateActivityList();
+                        showNotification('Activity type deleted (test mode)');
+                    } else {
+                        db.collection('activity_types').doc(id).delete().then(() => {
+                            if(editingActivityId === id) resetActivityForm();
+                            showNotification('Activity type deleted');
+                        }).catch(error => {
+                            showNotification('Error deleting activity: ' + error.message, true);
+                        });
+                    }
+                }
+            }
+        });
+        
+        // Initialize with sample data in test mode
+        if (testMode) {
+            localEventTypes = {
+                'test-event-1': { id: 'test-event-1', name: 'Meeting', event_type_color: '#ffc107', event_summarize_check: true },
+                'test-event-2': { id: 'test-event-2', name: 'Birthday', event_type_color: '#e91e63', event_summarize_check: false },
+                'test-event-3': { id: 'test-event-3', name: 'Holiday', event_type_color: '#4caf50', event_summarize_check: true }
+            };
+            
+            localActivities = {
+                'test-activity-1': { id: 'test-activity-1', name: 'Exercise', activity_type: 'boolean', activity_unit: 'Days' },
+                'test-activity-2': { id: 'test-activity-2', name: 'Water Intake', activity_type: 'quantity', activity_unit: 'Liters' },
+                'test-activity-3': { id: 'test-activity-3', name: 'Reading', activity_type: 'quantity', activity_unit: 'Pages' }
+            };
+            
+            // Add some sample calendar data
+            const today = new Date();
+            const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            localCalendarData[todayString] = {
+                year: today.getFullYear(),
+                eventType: 'test-event-1',
+                eventNote: 'Team meeting at 10 AM',
+                activities: {
+                    'test-activity-1': true,
+                    'test-activity-2': { value: 2.5 }
+                }
+            };
+            
+            updateEventList();
+            updateActivityList();
+        }
+
+        // Check if color is dark for text contrast
+        function isColorDark(hex) {
+            if (!hex) return false;
+            const color = hex.startsWith('#') ? hex.substring(1) : hex;
+            const rgb = parseInt(color, 16);
+            return ((rgb >> 16) & 0xff) * 0.299 + ((rgb >> 8) & 0xff) * 0.587 + (rgb & 0xff) * 0.114 < 186;
         }
 
         // Generate calendar UI
@@ -1048,6 +1398,25 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             generateQuickNav();
+        }
+        
+        // Generate quick navigation for year view
+        function generateQuickNav() {
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            yearQuickNav.innerHTML = '';
+            
+            monthNames.forEach((name, index) => {
+                const button = document.createElement('button');
+                button.textContent = name;
+                if (index === currentMonth) {
+                    button.classList.add('active');
+                }
+                button.addEventListener('click', () => {
+                    currentMonth = index;
+                    monthViewBtn.click();
+                });
+                yearQuickNav.appendChild(button);
+            });
         }
         
         // Generate month view
@@ -1173,23 +1542,246 @@ document.addEventListener('DOMContentLoaded', function() {
             return dayCell;
         }
         
-        // Check if color is dark for text contrast
-        function isColorDark(hex) {
-            if (!hex) return false;
-            const color = hex.startsWith('#') ? hex.substring(1) : hex;
-            const rgb = parseInt(color, 16);
-            return ((rgb >> 16) & 0xff) * 0.299 + ((rgb >> 8) & 0xff) * 0.587 + (rgb & 0xff) * 0.114 < 186;
+        // Generate week view
+        function generateWeekView(startDate) {
+            const weekTitle = document.getElementById('week-title');
+            const weekDaysGrid = document.getElementById('week-days-grid');
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            
+            const endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + 6);
+            
+            weekTitle.textContent = `Week of ${monthNames[startDate.getMonth()]} ${startDate.getDate()}, ${startDate.getFullYear()}`;
+            weekDaysGrid.innerHTML = '';
+            
+            for (let i = 0; i < 7; i++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + i);
+                const dateString = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
+                
+                const dayCell = document.createElement('div');
+                dayCell.className = 'week-day';
+                
+                // Check if this is today
+                const today = new Date();
+                const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                if (dateString === todayString) {
+                    dayCell.classList.add('today');
+                }
+                
+                const dayData = localCalendarData[dateString];
+                
+                dayCell.innerHTML = `
+                    <div class="week-day-header">
+                        <div class="week-day-name">${dayNames[currentDate.getDay()]}</div>
+                        <div class="week-day-date">${currentDate.getDate()} ${monthNames[currentDate.getMonth()].substring(0, 3)}</div>
+                    </div>
+                    <div class="week-day-content"></div>
+                `;
+                
+                const contentArea = dayCell.querySelector('.week-day-content');
+                
+                if (dayData) {
+                    // Add event info
+                    if (dayData.eventType && localEventTypes[dayData.eventType]) {
+                        const event = localEventTypes[dayData.eventType];
+                        const eventElement = document.createElement('div');
+                        eventElement.className = 'week-event';
+                        eventElement.textContent = event.name;
+                        eventElement.style.backgroundColor = event.event_type_color;
+                        eventElement.style.color = isColorDark(event.event_type_color) ? 'white' : 'black';
+                        contentArea.appendChild(eventElement);
+                    }
+                    
+                    // Add activities info
+                    if (dayData.activities) {
+                        for (const activityId in dayData.activities) {
+                            if (localActivities[activityId]) {
+                                const activity = localActivities[activityId];
+                                const activityElement = document.createElement('div');
+                                activityElement.className = 'week-activity';
+                                
+                                let activityText = activity.name;
+                                if (activity.activity_type === 'quantity' && dayData.activities[activityId].value) {
+                                    activityText += `: ${dayData.activities[activityId].value} ${activity.activity_unit || ''}`;
+                                }
+                                
+                                activityElement.textContent = activityText;
+                                contentArea.appendChild(activityElement);
+                            }
+                        }
+                    }
+                    
+                    // Add note indicator
+                    if (dayData.eventNote && dayData.eventNote.trim() !== '') {
+                        const noteIndicator = document.createElement('div');
+                        noteIndicator.className = 'week-activity';
+                        noteIndicator.textContent = '📝 Note: ' + (dayData.eventNote.length > 50 ? dayData.eventNote.substring(0, 50) + '...' : dayData.eventNote);
+                        contentArea.appendChild(noteIndicator);
+                    }
+                }
+                
+                // If no content, add a placeholder
+                if (contentArea.innerHTML === '') {
+                    contentArea.innerHTML = '<div style="color: #aaa; font-style: italic; text-align: center; padding: 10px;">No events or activities</div>';
+                }
+                
+                dayCell.addEventListener('click', () => openModal(dateString));
+                weekDaysGrid.appendChild(dayCell);
+            }
         }
+        
+        // Populate event type dropdown
+        function populateEventTypeDropdown() {
+            const select = document.getElementById('event-type-select');
+            select.innerHTML = '<option value="">None</option>';
+            Object.values(localEventTypes).forEach(event => {
+                select.innerHTML += `<option value="${event.id}">${event.name}</option>`;
+            });
+        }
+
+        // Open modal for editing day data
+        function openModal(dateString) {
+            currentEditingDate = dateString;
+            const modal = document.getElementById('data-modal');
+            modal.style.display = 'flex';
+            document.getElementById('modal-title').textContent = `Edit Day: ${dateString}`;
+            const dayData = localCalendarData[dateString] || {};
+            document.getElementById('event-type-select').value = dayData.eventType || '';
+            document.getElementById('event-note').value = dayData.eventNote || '';
+            const checklistContainer = document.getElementById('activities-checklist');
+            checklistContainer.innerHTML = '';
+            const dayActivities = dayData.activities || {};
+            
+            Object.values(localActivities).forEach(activity => {
+                const activityValue = dayActivities[activity.id];
+                let inputHtml = '';
+                if (activity.activity_type === 'boolean') {
+                    inputHtml = `
+                        <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" id="activity-${activity.id}" data-id="${activity.id}" ${activityValue ? 'checked' : ''}>
+                            <label for="activity-${activity.id}">${activity.name}</label>
+                        </div>
+                    `;
+                } else if (activity.activity_type === 'quantity') {
+                    inputHtml = `
+                        <div class="form-group">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                                <input type="checkbox" id="activity-${activity.id}" data-id="${activity.id}" class="quantity-check" ${activityValue ? 'checked' : ''}>
+                                <label for="activity-${activity.id}">${activity.name}</label>
+                            </div>
+                            <input type="number" id="activity-${activity.id}-value" data-id="${activity.id}-value" placeholder="${activity.activity_unit || 'Qty'}" 
+                                   style="display:${activityValue ? 'block' : 'none'}; margin-left: 25px;" 
+                                   value="${activityValue?.value || ''}">
+                        </div>
+                    `;
+                }
+                checklistContainer.innerHTML += inputHtml;
+            });
+        }
+
+        // Handle quantity checkbox changes
+        document.getElementById('activities-checklist').addEventListener('change', e => {
+            if (e.target.classList.contains('quantity-check')) {
+                const valueInput = document.getElementById(`activity-${e.target.dataset.id}-value`);
+                if (valueInput) valueInput.style.display = e.target.checked ? 'block' : 'none';
+            }
+        });
+
+        // Save day data
+        document.getElementById('save-data-btn').addEventListener('click', async () => {
+            const activities = {};
+            document.querySelectorAll('#activities-checklist input[type="checkbox"]').forEach(input => {
+                const id = input.dataset.id;
+                if (input.checked) {
+                    if (input.classList.contains('quantity-check')) {
+                        const valueInput = document.getElementById(`activity-${id}-value`);
+                        activities[id] = { value: parseFloat(valueInput.value) || 0 };
+                    } else {
+                        activities[id] = true;
+                    }
+                }
+            });
+            
+            const dataToSave = {
+                year: parseInt(currentEditingDate.substring(0, 4), 10),
+                eventType: document.getElementById('event-type-select').value || null,
+                eventNote: document.getElementById('event-note').value.trim() || null,
+                activities: activities
+            };
+            
+            if (testMode) {
+                // Test mode: Just update local state
+                localCalendarData[currentEditingDate] = dataToSave;
+                showNotification('Day data saved successfully (test mode)');
+            } else {
+                // Normal mode: Save to Firestore
+                try {
+                    await db.collection('calendar_data').doc(currentEditingDate).set(dataToSave, { merge: true });
+                    showNotification('Day data saved successfully');
+                } catch (error) {
+                    showNotification('Error saving day data: ' + error.message, true);
+                    return;
+                }
+            }
+            
+            document.getElementById('data-modal').style.display = 'none';
+            
+            // Refresh the current view
+            if (currentView === 'year') {
+                generateCalendarUI(currentYear);
+            } else if (currentView === 'month') {
+                generateMonthView(currentYear, currentMonth);
+            } else if (currentView === 'week') {
+                generateWeekView(currentWeekStart);
+            }
+        });
+        
+        // Clear day data
+        document.getElementById('clear-data-btn').addEventListener('click', async () => {
+            if (confirm("Clear all data for this day?")) {
+                if (testMode) {
+                    // Test mode: Just update local state
+                    delete localCalendarData[currentEditingDate];
+                    showNotification('Day data cleared (test mode)');
+                } else {
+                    // Normal mode: Delete from Firestore
+                    try {
+                        await db.collection('calendar_data').doc(currentEditingDate).delete();
+                        showNotification('Day data cleared');
+                    } catch (error) {
+                        showNotification('Error clearing day data: ' + error.message, true);
+                        return;
+                    }
+                }
+                document.getElementById('data-modal').style.display = 'none';
+                
+                // Refresh the current view
+                if (currentView === 'year') {
+                    generateCalendarUI(currentYear);
+                } else if (currentView === 'month') {
+                    generateMonthView(currentYear, currentMonth);
+                } else if (currentView === 'week') {
+                    generateWeekView(currentWeekStart);
+                }
+            }
+        });
+        
+        // Close modal
+        document.getElementById('close-modal-btn').addEventListener('click', () => {
+            document.getElementById('data-modal').style.display = 'none';
+        });
 
         // Initialize the app
         document.getElementById('year-input').addEventListener('change', e => {
             const year = parseInt(e.target.value, 10);
-            if (!testMode) {
-                // In a real implementation, you would listen for year data here
-            }
+            currentYear = year;
             generateCalendarUI(year);
             if (currentView === 'month') {
                 generateMonthView(year, currentMonth);
+            } else if (currentView === 'week') {
+                generateWeekView(currentWeekStart);
             }
         });
         
@@ -1197,6 +1789,9 @@ document.addEventListener('DOMContentLoaded', function() {
         currentYear = parseInt(document.getElementById('year-input').value, 10);
         generateCalendarUI(currentYear);
         yearQuickNav.style.display = 'flex';
+        
+        // Initialize event type dropdown
+        populateEventTypeDropdown();
     }
 });
 </script>
