@@ -1,0 +1,1500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Cloud-Synced Calendar</title>
+    <!-- Import Firebase Libraries -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <style>
+        :root {
+            --primary-color: #4a6fa5;
+            --secondary-color: #6b8cbc;
+            --accent-color: #ff7e5f;
+            --light-bg: #f8f9fa;
+            --dark-text: #333;
+            --light-text: #fff;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            --transition: all 0.3s ease;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Roboto", "Helvetica Neue", sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            margin: 0;
+            padding: 20px;
+            color: var(--dark-text);
+            line-height: 1.6;
+        }
+        
+        .app-container { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 30px; 
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .calendar-main { 
+            flex: 1; 
+            min-width: 70%; 
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--box-shadow);
+        }
+        
+        .sidebar {
+            width: 100%;
+            max-width: 400px;
+            flex-shrink: 0;
+            font-size: 14px;
+        }
+        
+        .login-container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 30px;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            text-align: center;
+        }
+        
+        .calendar-header { 
+            display: flex; 
+            align-items: center; 
+            gap: 20px; 
+            margin-bottom: 20px; 
+            flex-wrap: wrap;
+        }
+        
+        .calendar-header h1 { 
+            font-size: 2.2em; 
+            margin: 0; 
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        
+        .view-toggle {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
+        }
+        
+        .view-toggle button {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--primary-color);
+            background: transparent;
+            color: var(--primary-color);
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 500;
+        }
+        
+        .view-toggle button.active {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .sidebar-section { 
+            background: #fff; 
+            padding: 20px; 
+            border-radius: var(--border-radius); 
+            margin-bottom: 20px; 
+            box-shadow: var(--box-shadow); 
+        }
+        
+        .sidebar-section h3 { 
+            margin-top: 0; 
+            border-bottom: 2px solid var(--light-bg); 
+            padding-bottom: 10px; 
+            font-size: 1.3em; 
+            color: var(--primary-color);
+        }
+
+        input, button, select, textarea { 
+            padding: 10px 12px; 
+            border-radius: 5px; 
+            border: 1px solid #ddd; 
+            margin: 0 8px 8px 0; 
+            font-size: 14px; 
+            vertical-align: middle; 
+            transition: var(--transition);
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(74, 111, 165, 0.2);
+        }
+        
+        textarea { 
+            width: calc(100% - 18px); 
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        button { 
+            background-color: var(--primary-color); 
+            color: white; 
+            border: none;
+            cursor: pointer; 
+            font-weight: 500;
+            transition: var(--transition);
+        }
+        
+        button:hover { 
+            background-color: var(--secondary-color); 
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        button.delete-btn { 
+            background-color: #e74c3c; 
+        }
+        
+        button.delete-btn:hover {
+            background-color: #c0392b;
+        }
+        
+        button.edit-btn { 
+            background-color: #f39c12; 
+            color: white; 
+        }
+        
+        button.edit-btn:hover {
+            background-color: #d35400;
+        }
+        
+        .item-list { 
+            margin-top: 10px; 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 8px; 
+        }
+        
+        .list-item { 
+            display: flex; 
+            align-items: center; 
+            gap: 6px; 
+            font-size: 14px; 
+            background: #f8f9fa; 
+            padding: 8px 12px; 
+            border-radius: 20px; 
+            border: 1px solid #eee; 
+            transition: var(--transition);
+        }
+        
+        .list-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .legend-color-box { 
+            width: 16px; 
+            height: 16px; 
+            border-radius: 50%; 
+            flex-shrink: 0; 
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        /* Year Grid Styles */
+        .year-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); 
+            gap: 15px; 
+        }
+        
+        .month { 
+            background: #fff; 
+            padding: 15px; 
+            border-radius: var(--border-radius); 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: var(--transition);
+            cursor: pointer;
+        }
+        
+        .month:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+        
+        .month h3 { 
+            text-align: center; 
+            font-size: 1.4em; 
+            margin-bottom: 10px; 
+            color: var(--primary-color);
+            padding: 10px;
+            background: var(--light-bg);
+            border-radius: var(--border-radius);
+        }
+        
+        .days-header, .days-grid { 
+            display: grid; 
+            grid-template-columns: repeat(7, 1fr); 
+            gap: 5px; 
+            text-align: center; 
+        }
+        
+        .days-header div { 
+            font-weight: bold; 
+            font-size: 0.9em; 
+            padding: 5px 0;
+            color: var(--primary-color);
+        }
+        
+        .day {
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+            background-color: #eef2f8;
+            transition: var(--transition);
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .day:hover { 
+            transform: scale(1.1); 
+            z-index: 10; 
+            box-shadow: 0 0 0 2px var(--primary-color);
+        }
+        
+        .day.weekend { 
+            background-color: #ffebee; 
+        }
+        
+        .day .indicator { 
+            position: absolute; 
+            bottom: 4px; 
+            right: 4px; 
+            width: 8px; 
+            height: 8px; 
+            background-color: #c0392b; 
+            border-radius: 50%; 
+            border: 1px solid white; 
+        }
+        
+        .day .event-indicator {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+        }
+
+        /* Today's Date Animation */
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(74, 111, 165, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(74, 111, 165, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(74, 111, 165, 0); }
+        }
+        
+        .day.today {
+            border: 2px solid var(--primary-color);
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+
+        /* Month View Styles */
+        .month-view {
+            display: none;
+        }
+        
+        .month-view-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .month-view-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+        
+        .month-day {
+            min-height: 100px;
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .month-day:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .month-day.other-month {
+            background: #f8f9fa;
+            color: #aaa;
+        }
+        
+        .month-day.today {
+            border: 2px solid var(--primary-color);
+        }
+        
+        .month-day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .month-day-number {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        .month-day-content {
+            font-size: 0.75em;
+            max-height: 70px;
+            overflow-y: auto;
+        }
+        
+        .month-event {
+            margin-bottom: 3px;
+            padding: 2px 4px;
+            border-radius: 3px;
+            color: white;
+            font-weight: 500;
+        }
+        
+        .month-activity {
+            margin-bottom: 2px;
+            padding-left: 5px;
+            border-left: 2px solid var(--secondary-color);
+        }
+
+        .modal { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0,0,0,0.5); 
+            display: none; 
+            justify-content: center; 
+            align-items: center; 
+            z-index: 1000; 
+        }
+        
+        .modal-content { 
+            background: white; 
+            padding: 25px; 
+            border-radius: var(--border-radius); 
+            width: 90%; 
+            max-width: 500px; 
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        #activities-checklist input[type="number"] { 
+            font-size: 14px; 
+            padding: 5px; 
+            width: 80px; 
+        }
+        
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 15px; 
+        }
+        
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 10px; 
+            text-align: left; 
+        }
+        
+        th {
+            background: var(--light-bg);
+            font-weight: 600;
+        }
+        
+        .summary-table .total-col, .summary-table .rate-col { 
+            width: 15%; 
+        }
+        
+        .summary-table .amount-col { 
+            width: 25%; 
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            .calendar-main, .sidebar {
+                min-width: 100%;
+                max-width: 100%;
+            }
+            
+            .year-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .calendar-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .view-toggle {
+                margin-left: 0;
+                margin-top: 10px;
+            }
+        }
+        
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: #2ecc71;
+            color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            z-index: 1001;
+            transform: translateX(150%);
+            transition: transform 0.3s ease;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.error {
+            background: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-container" class="login-container">
+    <h2>Login to Your Calendar</h2>
+    <input type="email" id="email" placeholder="Email" style="width: calc(100% - 20px); font-size: 14px;">
+    <input type="password" id="password" placeholder="Password" style="width: calc(100% - 20px); font-size: 14px;">
+    <button id="login-btn" style="width: 100%; font-size: 14px;">Login</button>
+    <button id="test-login-btn" style="width: 100%; font-size: 14px; margin-top: 10px; background-color: #2ecc71;">Test Mode (Skip Login)</button>
+    <p id="login-error" style="color: red;"></p>
+</div>
+
+<!-- MAIN APP (HIDDEN BY DEFAULT) -->
+<div id="app-wrapper" style="display: none;">
+    <div class="app-container">
+        <main class="calendar-main">
+            <div class="calendar-header">
+                <h1 id="calendar-title">Yearly Calendar</h1>
+                <input type="number" id="year-input" value="2025">
+                <div class="view-toggle">
+                    <button id="year-view-btn" class="active">Year View</button>
+                    <button id="month-view-btn">Month View</button>
+                </div>
+                <button id="logout-btn" style="margin-left: auto;">Logout</button>
+            </div>
+            
+            <!-- Year View -->
+            <div class="year-view" id="year-calendar"></div>
+            
+            <!-- Month View -->
+            <div class="month-view" id="month-calendar">
+                <div class="month-view-header">
+                    <button id="prev-month-btn">&lt; Previous</button>
+                    <h2 id="month-title">Month Year</h2>
+                    <button id="next-month-btn">Next &gt;</button>
+                </div>
+                <div class="days-header">
+                    <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                </div>
+                <div class="month-view-grid" id="month-days-grid"></div>
+            </div>
+        </main>
+        
+        <aside class="sidebar">
+             <div class="sidebar-section">
+                <h3>Manage Event Types</h3>
+                <input type="text" id="event-type-name" placeholder="New/Update Event Name">
+                <input type="color" id="event-type-color" value="#ffc107">
+                <label><input type="checkbox" id="event-summarize-check"> Summarize?</label>
+                <button id="add-event-type-btn">Add Event</button>
+                <div id="event-list" class="item-list"></div>
+            </div>
+            <div class="sidebar-section">
+                <h3>Manage Daily Activities</h3>
+                <input type="text" id="activity-name" placeholder="New/Update Activity Name">
+                <select id="activity-type">
+                    <option value="boolean">Yes/No</option>
+                    <option value="quantity">Quantity</option>
+                </select>
+                <input type="text" id="activity-unit" placeholder="Unit (e.g., Days)">
+                <button id="add-activity-btn">Add Activity</button>
+                <div id="activity-list" class="item-list"></div>
+            </div>
+             <div class="sidebar-section">
+                <h3>View Summaries</h3>
+                <select id="summary-period-filter">
+                    <option value="yearly">Yearly Summary</option>
+                    <option value="monthly">Monthly Summary</option>
+                </select>
+                <select id="summary-month-filter" style="display: none;">
+                    <option value="all">Full Year</option>
+                </select>
+                <button id="generate-summary-btn">Generate Summary</button>
+                <div id="summary-output"></div>
+                <button id="save-summary-btn" style="display: none; margin-top: 10px;">Save Multipliers</button>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<!-- Modal for Daily Data Entry -->
+<div id="data-modal" class="modal">
+    <div class="modal-content">
+        <h3 id="modal-title">Edit Day:</h3>
+        <label for="event-type-select">Event Type:</label>
+        <select id="event-type-select"></select>
+        <label for="event-note">Note for this Day:</label>
+        <textarea id="event-note" rows="3" placeholder="Add any details here (visible only in this view)..."></textarea>
+        <hr>
+        <h4>Daily Activities</h4>
+        <div id="activities-checklist"></div>
+        <div class="modal-buttons" style="margin-top: 20px; text-align: right;">
+            <button id="save-data-btn">Save & Close</button>
+            <button id="clear-data-btn" class="delete-btn">Clear Day</button>
+            <button id="close-modal-btn" style="background-color: #6c757d;">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Notification -->
+<div id="notification" class="notification"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- START: PASTE YOUR FIREBASE CONFIG HERE ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyBQ-rbOB_UfqnQ3n6lnboylN95Wtv7fkYk",
+        authDomain: "my-calendar-app-c0502.firebaseapp.com",
+        projectId: "my-calendar-app-c0502",
+        storageBucket: "my-calendar-app-c0502.firebasestorage.app",
+        messagingSenderId: "234589573992",
+        appId: "1:234589573992:web:fff767b92e1f910a627cdd"
+    };
+    // --- END: PASTE YOUR FIREBASE CONFIG HERE ---
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    const loginContainer = document.getElementById('login-container');
+    const appWrapper = document.getElementById('app-wrapper');
+    const notification = document.getElementById('notification');
+    
+    // Show notification function
+    function showNotification(message, isError = false) {
+        notification.textContent = message;
+        notification.className = 'notification' + (isError ? ' error' : '');
+        notification.classList.add('show');
+        
+        setTimeout(() => {
+            notification.classList.remove('show');
+        }, 3000);
+    }
+
+    // Test mode flag
+    let testMode = false;
+
+    // --- AUTHENTICATION LOGIC ---
+    auth.onAuthStateChanged(user => {
+        if (user || testMode) {
+            loginContainer.style.display = 'none';
+            appWrapper.style.display = 'block';
+            runApp();
+        } else {
+            loginContainer.style.display = 'block';
+            appWrapper.style.display = 'none';
+        }
+    });
+
+    document.getElementById('login-btn').addEventListener('click', () => {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        auth.signInWithEmailAndPassword(email, password)
+            .then(() => {
+                showNotification('Login successful!');
+            })
+            .catch(error => {
+                document.getElementById('login-error').textContent = error.message;
+                showNotification('Login failed: ' + error.message, true);
+            });
+    });
+
+    // Test mode button (bypasses login)
+    document.getElementById('test-login-btn').addEventListener('click', () => {
+        testMode = true;
+        loginContainer.style.display = 'none';
+        appWrapper.style.display = 'block';
+        runApp();
+        showNotification('Test mode activated. Data changes will not be saved.');
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+        if (testMode) {
+            testMode = false;
+            loginContainer.style.display = 'block';
+            appWrapper.style.display = 'none';
+            showNotification('Exited test mode');
+        } else {
+            auth.signOut();
+            showNotification('Logged out successfully');
+        }
+    });
+
+    // --- MAIN APPLICATION LOGIC ---
+    function runApp() {
+        let localEventTypes = {}, localActivities = {}, localCalendarData = {};
+        let currentEditingDate = null;
+        let editingEventId = null, editingActivityId = null;
+        let currentView = 'year'; // 'year' or 'month'
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+
+        // --- VIEW TOGGLE LOGIC ---
+        const yearViewBtn = document.getElementById('year-view-btn');
+        const monthViewBtn = document.getElementById('month-view-btn');
+        const yearView = document.getElementById('year-calendar');
+        const monthView = document.getElementById('month-calendar');
+        const calendarTitle = document.getElementById('calendar-title');
+        const summaryPeriodFilter = document.getElementById('summary-period-filter');
+        const summaryMonthFilter = document.getElementById('summary-month-filter');
+
+        yearViewBtn.addEventListener('click', () => {
+            if (currentView === 'month') {
+                currentView = 'year';
+                yearView.style.display = 'grid';
+                monthView.style.display = 'none';
+                yearViewBtn.classList.add('active');
+                monthViewBtn.classList.remove('active');
+                calendarTitle.textContent = 'Yearly Calendar';
+                summaryPeriodFilter.style.display = 'inline-block';
+                summaryMonthFilter.style.display = currentView === 'year' ? 'none' : 'inline-block';
+            }
+        });
+
+        monthViewBtn.addEventListener('click', () => {
+            if (currentView === 'year') {
+                currentView = 'month';
+                yearView.style.display = 'none';
+                monthView.style.display = 'block';
+                yearViewBtn.classList.remove('active');
+                monthViewBtn.classList.add('active');
+                calendarTitle.textContent = 'Monthly Calendar';
+                summaryPeriodFilter.style.display = 'inline-block';
+                summaryMonthFilter.style.display = currentView === 'year' ? 'none' : 'inline-block';
+                generateMonthView(currentYear, currentMonth);
+            }
+        });
+
+        // Month navigation
+        document.getElementById('prev-month-btn').addEventListener('click', () => {
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            generateMonthView(currentYear, currentMonth);
+        });
+
+        document.getElementById('next-month-btn').addEventListener('click', () => {
+            currentMonth++;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            generateMonthView(currentYear, currentMonth);
+        });
+
+        // Summary period filter
+        summaryPeriodFilter.addEventListener('change', function() {
+            summaryMonthFilter.style.display = this.value === 'monthly' ? 'inline-block' : 'none';
+        });
+
+        // --- EVENT TYPE MANAGEMENT ---
+        const eventNameInput = document.getElementById('event-type-name');
+        const eventColorInput = document.getElementById('event-type-color');
+        const eventSummarizeCheck = document.getElementById('event-summarize-check');
+        const addEventTypeBtn = document.getElementById('add-event-type-btn');
+        const eventListContainer = document.getElementById('event-list');
+
+        const resetEventForm = () => {
+            editingEventId = null;
+            eventNameInput.value = '';
+            eventColorInput.value = '#ffc107';
+            eventSummarizeCheck.checked = false;
+            addEventTypeBtn.textContent = 'Add Event';
+        };
+
+        addEventTypeBtn.addEventListener('click', async () => {
+            const name = eventNameInput.value.trim();
+            if (!name) return;
+            const data = { name: name, event_type_color: eventColorInput.value, event_summarize_check: eventSummarizeCheck.checked };
+            
+            if (testMode) {
+                // Test mode: Just update local state
+                const id = editingEventId || 'test-' + Date.now();
+                localEventTypes[id] = { ...data, id: id };
+                updateEventList();
+                resetEventForm();
+                showNotification(`Event type "${name}" ${editingEventId ? 'updated' : 'added'} successfully (test mode)`);
+            } else {
+                // Normal mode: Save to Firestore
+                const docRef = editingEventId ? db.collection('event_types').doc(editingEventId) : db.collection('event_types').doc();
+                await docRef.set(data, { merge: true });
+                resetEventForm();
+                showNotification(`Event type "${name}" ${editingEventId ? 'updated' : 'added'} successfully`);
+            }
+        });
+
+        function updateEventList() {
+            eventListContainer.innerHTML = '';
+            Object.values(localEventTypes).forEach(event => {
+                eventListContainer.innerHTML += `<div class="list-item">
+                    <div class="legend-color-box" style="background-color: ${event.event_type_color};"></div>
+                    <span>${event.name}${event.event_summarize_check ? ' (S)' : ''}</span>
+                    <button class="edit-btn" data-id="${event.id}">Edit</button>
+                    <button class="delete-btn" data-id="${event.id}">X</button>
+                </div>`;
+            });
+            populateEventTypeDropdown();
+        }
+
+        eventListContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('edit-btn')) {
+                const id = e.target.dataset.id;
+                const event = localEventTypes[id];
+                editingEventId = id;
+                eventNameInput.value = event.name;
+                eventColorInput.value = event.event_type_color;
+                eventSummarizeCheck.checked = event.event_summarize_check;
+                addEventTypeBtn.textContent = 'Update Event';
+            } else if (e.target.classList.contains('delete-btn')) {
+                const id = e.target.dataset.id;
+                if (confirm("Delete this event type?")) {
+                    if (testMode) {
+                        delete localEventTypes[id];
+                        if(editingEventId === id) resetEventForm();
+                        updateEventList();
+                        showNotification('Event type deleted (test mode)');
+                    } else {
+                        db.collection('event_types').doc(id).delete();
+                        if(editingEventId === id) resetEventForm();
+                        showNotification('Event type deleted');
+                    }
+                }
+            }
+        });
+
+        // --- ACTIVITY TYPE MANAGEMENT ---
+        const activityNameInput = document.getElementById('activity-name');
+        const activityTypeSelect = document.getElementById('activity-type');
+        const activityUnitInput = document.getElementById('activity-unit');
+        const addActivityBtn = document.getElementById('add-activity-btn');
+        const activityListContainer = document.getElementById('activity-list');
+
+        activityTypeSelect.addEventListener('change', () => {
+            if (activityTypeSelect.value === 'quantity') {
+                activityUnitInput.placeholder = 'Unit (e.g., kg, L)';
+            } else {
+                activityUnitInput.placeholder = 'Unit (e.g., Days)';
+            }
+        });
+        
+        const resetActivityForm = () => {
+            editingActivityId = null;
+            activityNameInput.value = '';
+            activityTypeSelect.value = 'boolean';
+            activityUnitInput.value = '';
+            addActivityBtn.textContent = 'Add Activity';
+            activityTypeSelect.dispatchEvent(new Event('change'));
+        };
+
+        addActivityBtn.addEventListener('click', async () => {
+            const name = activityNameInput.value.trim();
+            if (!name) return;
+            const data = { name: name, activity_type: activityTypeSelect.value, activity_unit: activityUnitInput.value.trim() };
+            
+            if (testMode) {
+                // Test mode: Just update local state
+                const id = editingActivityId || 'test-' + Date.now();
+                localActivities[id] = { ...data, id: id };
+                updateActivityList();
+                resetActivityForm();
+                showNotification(`Activity "${name}" ${editingActivityId ? 'updated' : 'added'} successfully (test mode)`);
+            } else {
+                // Normal mode: Save to Firestore
+                const docRef = editingActivityId ? db.collection('activity_types').doc(editingActivityId) : db.collection('activity_types').doc();
+                await docRef.set(data, { merge: true });
+                resetActivityForm();
+                showNotification(`Activity "${name}" ${editingActivityId ? 'updated' : 'added'} successfully`);
+            }
+        });
+
+        function updateActivityList() {
+            activityListContainer.innerHTML = '';
+            Object.values(localActivities).forEach(activity => {
+                const unitText = activity.activity_unit ? `, ${activity.activity_unit}` : '';
+                activityListContainer.innerHTML += `<div class="list-item">
+                    <span>${activity.name} (${activity.activity_type}${unitText})</span>
+                    <button class="edit-btn" data-id="${activity.id}">Edit</button>
+                    <button class="delete-btn" data-id="${activity.id}">X</button>
+                </div>`;
+            });
+        }
+        
+        activityListContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('edit-btn')) {
+                const id = e.target.dataset.id;
+                const activity = localActivities[id];
+                editingActivityId = id;
+                activityNameInput.value = activity.name;
+                activityTypeSelect.value = activity.activity_type;
+                addActivityBtn.textContent = 'Update Activity';
+                activityUnitInput.value = activity.activity_unit || '';
+                activityTypeSelect.dispatchEvent(new Event('change'));
+            } else if (e.target.classList.contains('delete-btn')) {
+                const id = e.target.dataset.id;
+                if (confirm("Delete this activity type?")) {
+                    if (testMode) {
+                        delete localActivities[id];
+                        if(editingActivityId === id) resetActivityForm();
+                        updateActivityList();
+                        showNotification('Activity type deleted (test mode)');
+                    } else {
+                        db.collection('activity_types').doc(id).delete();
+                        if(editingActivityId === id) resetActivityForm();
+                        showNotification('Activity type deleted');
+                    }
+                }
+            }
+        });
+        
+        // --- REALTIME LISTENERS & RENDERING ---
+        if (!testMode) {
+            // Only set up Firestore listeners if not in test mode
+            db.collection('event_types').orderBy("name").onSnapshot(snapshot => {
+                localEventTypes = {};
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    localEventTypes[doc.id] = { ...data, id: doc.id };
+                });
+                updateEventList();
+                generateCalendarUI(parseInt(document.getElementById('year-input').value, 10));
+                if (currentView === 'month') {
+                    generateMonthView(currentYear, currentMonth);
+                }
+            });
+
+            db.collection('activity_types').orderBy("name").onSnapshot(snapshot => {
+                localActivities = {};
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    localActivities[doc.id] = { ...data, id: doc.id };
+                });
+                updateActivityList();
+                if (currentView === 'month') {
+                    generateMonthView(currentYear, currentMonth);
+                }
+            });
+
+            function listenForYearData(year) {
+                if (this._calendarUnsubscribe) this._calendarUnsubscribe(); 
+                this._calendarUnsubscribe = db.collection('calendar_data').where('year', '==', year)
+                    .onSnapshot(snapshot => {
+                        localCalendarData = {};
+                        snapshot.forEach(doc => localCalendarData[doc.id] = doc.data());
+                        generateCalendarUI(year);
+                        if (currentView === 'month') {
+                            generateMonthView(currentYear, currentMonth);
+                        }
+                    }, console.error);
+            }
+        } else {
+            // Test mode: Initialize with some sample data
+            localEventTypes = {
+                'test-event-1': { id: 'test-event-1', name: 'Meeting', event_type_color: '#ffc107', event_summarize_check: true },
+                'test-event-2': { id: 'test-event-2', name: 'Birthday', event_type_color: '#e91e63', event_summarize_check: false }
+            };
+            
+            localActivities = {
+                'test-activity-1': { id: 'test-activity-1', name: 'Exercise', activity_type: 'boolean', activity_unit: 'Days' },
+                'test-activity-2': { id: 'test-activity-2', name: 'Water Intake', activity_type: 'quantity', activity_unit: 'Liters' }
+            };
+            
+            updateEventList();
+            updateActivityList();
+            generateCalendarUI(parseInt(document.getElementById('year-input').value, 10));
+        }
+
+        function isColorDark(hex) {
+            if (!hex) return false;
+            const color = hex.startsWith('#') ? hex.substring(1) : hex;
+            const rgb = parseInt(color, 16);
+            return ((rgb >> 16) & 0xff) * 0.299 + ((rgb >> 8) & 0xff) * 0.587 + (rgb & 0xff) * 0.114 < 186;
+        }
+
+        function generateCalendarUI(year) {
+            const calendarContainer = document.getElementById('year-calendar');
+            calendarContainer.innerHTML = '';
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            
+            // Get today's date string
+            const today = new Date();
+            const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+            for (let month = 0; month < 12; month++) {
+                const monthDiv = document.createElement('div');
+                monthDiv.className = 'month';
+                monthDiv.innerHTML = `<h3 data-month="${month}">${monthNames[month]} ${year}</h3><div class="days-header"><div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div></div>`;
+                const daysGrid = document.createElement('div');
+                daysGrid.className = 'days-grid';
+                const firstDay = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                for (let i = 0; i < firstDay; i++) daysGrid.innerHTML += `<div></div>`;
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dayCell = document.createElement('div');
+                    const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    dayCell.className = (new Date(year, month, day).getDay() % 6 === 0) ? 'day weekend' : 'day';
+                    
+                    // Check if this cell is today's date
+                    if (dateString === todayString) {
+                        dayCell.classList.add('today');
+                    }
+
+                    dayCell.textContent = day;
+                    dayCell.dataset.date = dateString;
+                    dayCell.addEventListener('click', () => openModal(dateString));
+                    const dayData = localCalendarData[dateString];
+                    if (dayData) {
+                        if (dayData.eventType && localEventTypes[dayData.eventType]) {
+                            const eventColor = localEventTypes[dayData.eventType].event_type_color;
+                            dayCell.style.backgroundColor = eventColor;
+                            dayCell.style.color = isColorDark(eventColor) ? '#fff' : '#000';
+                        }
+                        const hasNote = dayData.eventNote && dayData.eventNote.trim() !== '';
+                        const hasActivities = dayData.activities && Object.keys(dayData.activities).length > 0;
+                        if (hasNote || hasActivities) {
+                            dayCell.innerHTML += '<div class="indicator"></div>';
+                        }
+                    }
+                    daysGrid.appendChild(dayCell);
+                }
+                monthDiv.appendChild(daysGrid);
+                
+                // Add click event to month header to switch to month view
+                const monthHeader = monthDiv.querySelector('h3');
+                monthHeader.style.cursor = 'pointer';
+                monthHeader.addEventListener('click', () => {
+                    currentMonth = month;
+                    currentYear = year;
+                    currentView = 'month';
+                    yearView.style.display = 'none';
+                    monthView.style.display = 'block';
+                    yearViewBtn.classList.remove('active');
+                    monthViewBtn.classList.add('active');
+                    calendarTitle.textContent = 'Monthly Calendar';
+                    generateMonthView(year, month);
+                });
+                
+                calendarContainer.appendChild(monthDiv);
+            }
+        }
+        
+        function generateMonthView(year, month) {
+            const monthTitle = document.getElementById('month-title');
+            const monthDaysGrid = document.getElementById('month-days-grid');
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            
+            monthTitle.textContent = `${monthNames[month]} ${year}`;
+            monthDaysGrid.innerHTML = '';
+            
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const daysInPrevMonth = new Date(year, month, 0).getDate();
+            
+            // Add days from previous month
+            for (let i = firstDay - 1; i >= 0; i--) {
+                const day = daysInPrevMonth - i;
+                const prevMonth = month === 0 ? 11 : month - 1;
+                const prevYear = month === 0 ? year - 1 : year;
+                const dateString = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                
+                const dayCell = createMonthDayCell(day, dateString, true);
+                monthDaysGrid.appendChild(dayCell);
+            }
+            
+            // Add days from current month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayCell = createMonthDayCell(day, dateString, false);
+                monthDaysGrid.appendChild(dayCell);
+            }
+            
+            // Add days from next month to complete the grid
+            const totalCells = 42; // 6 rows x 7 days
+            const cellsSoFar = firstDay + daysInMonth;
+            const daysToAdd = totalCells - cellsSoFar;
+            
+            for (let day = 1; day <= daysToAdd; day++) {
+                const nextMonth = month === 11 ? 0 : month + 1;
+                const nextYear = month === 11 ? year + 1 : year;
+                const dateString = `${nextYear}-${String(nextMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                
+                const dayCell = createMonthDayCell(day, dateString, true);
+                monthDaysGrid.appendChild(dayCell);
+            }
+        }
+        
+        function createMonthDayCell(day, dateString, isOtherMonth) {
+            const dayCell = document.createElement('div');
+            dayCell.className = 'month-day';
+            if (isOtherMonth) dayCell.classList.add('other-month');
+            
+            // Check if this is today
+            const today = new Date();
+            const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            if (dateString === todayString) {
+                dayCell.classList.add('today');
+            }
+            
+            const dayData = localCalendarData[dateString];
+            
+            dayCell.innerHTML = `
+                <div class="month-day-header">
+                    <span class="month-day-number">${day}</span>
+                </div>
+                <div class="month-day-content"></div>
+            `;
+            
+            const contentArea = dayCell.querySelector('.month-day-content');
+            
+            if (dayData) {
+                // Add event info
+                if (dayData.eventType && localEventTypes[dayData.eventType]) {
+                    const event = localEventTypes[dayData.eventType];
+                    const eventElement = document.createElement('div');
+                    eventElement.className = 'month-event';
+                    eventElement.textContent = event.name;
+                    eventElement.style.backgroundColor = event.event_type_color;
+                    eventElement.style.color = isColorDark(event.event_type_color) ? 'white' : 'black';
+                    contentArea.appendChild(eventElement);
+                }
+                
+                // Add activities info
+                if (dayData.activities) {
+                    for (const activityId in dayData.activities) {
+                        if (localActivities[activityId]) {
+                            const activity = localActivities[activityId];
+                            const activityElement = document.createElement('div');
+                            activityElement.className = 'month-activity';
+                            
+                            let activityText = activity.name;
+                            if (activity.activity_type === 'quantity' && dayData.activities[activityId].value) {
+                                activityText += `: ${dayData.activities[activityId].value} ${activity.activity_unit || ''}`;
+                            }
+                            
+                            activityElement.textContent = activityText;
+                            contentArea.appendChild(activityElement);
+                        }
+                    }
+                }
+                
+                // Add note indicator
+                if (dayData.eventNote && dayData.eventNote.trim() !== '') {
+                    const noteIndicator = document.createElement('div');
+                    noteIndicator.className = 'month-activity';
+                    noteIndicator.textContent = '📝 Note';
+                    contentArea.appendChild(noteIndicator);
+                }
+            }
+            
+            dayCell.addEventListener('click', () => openModal(dateString));
+            return dayCell;
+        }
+        
+        const modal = document.getElementById('data-modal');
+        
+        function populateEventTypeDropdown() {
+            const select = document.getElementById('event-type-select');
+            select.innerHTML = '<option value="">None</option>';
+            Object.values(localEventTypes).forEach(event => {
+                select.innerHTML += `<option value="${event.id}">${event.name}</option>`;
+            });
+        }
+
+        function openModal(dateString) {
+            currentEditingDate = dateString;
+            modal.style.display = 'flex';
+            document.getElementById('modal-title').textContent = `Edit Day: ${dateString}`;
+            const dayData = localCalendarData[dateString] || {};
+            document.getElementById('event-type-select').value = dayData.eventType || '';
+            document.getElementById('event-note').value = dayData.eventNote || '';
+            const checklistContainer = document.getElementById('activities-checklist');
+            checklistContainer.innerHTML = '';
+            const dayActivities = dayData.activities || {};
+            Object.values(localActivities).forEach(activity => {
+                const activityValue = dayActivities[activity.id];
+                let inputHtml = '';
+                if (activity.activity_type === 'boolean') {
+                    inputHtml = `<label><input type="checkbox" data-id="${activity.id}" ${activityValue ? 'checked' : ''}> ${activity.name}</label>`;
+                } else if (activity.activity_type === 'quantity') {
+                    inputHtml = `<div style="margin-bottom: 5px;">
+                        <label><input type="checkbox" data-id="${activity.id}" class="quantity-check" ${activityValue ? 'checked' : ''}> ${activity.name}</label>
+                        <input type="number" data-id="${activity.id}-value" placeholder="${activity.activity_unit || 'Qty'}" style="display:${activityValue ? 'inline-block' : 'none'}" value="${activityValue?.value || ''}">
+                    </div>`;
+                }
+                checklistContainer.innerHTML += inputHtml;
+            });
+        }
+
+        document.getElementById('activities-checklist').addEventListener('change', e => {
+            if (e.target.classList.contains('quantity-check')) {
+                const valueInput = document.querySelector(`input[data-id="${e.target.dataset.id}-value"]`);
+                if (valueInput) valueInput.style.display = e.target.checked ? 'inline-block' : 'none';
+            }
+        });
+
+        document.getElementById('save-data-btn').addEventListener('click', async () => {
+            const activities = {};
+            document.querySelectorAll('#activities-checklist input[type="checkbox"]').forEach(input => {
+                const id = input.dataset.id;
+                if (input.checked) {
+                    if (input.classList.contains('quantity-check')) {
+                        const valueInput = document.querySelector(`input[data-id="${id}-value"]`);
+                        activities[id] = { value: parseFloat(valueInput.value) || 0 };
+                    } else {
+                        activities[id] = true;
+                    }
+                }
+            });
+            const dataToSave = {
+                year: parseInt(currentEditingDate.substring(0, 4), 10),
+                eventType: document.getElementById('event-type-select').value || null,
+                eventNote: document.getElementById('event-note').value.trim() || null,
+                activities: activities
+            };
+            
+            if (testMode) {
+                // Test mode: Just update local state
+                localCalendarData[currentEditingDate] = dataToSave;
+                showNotification('Day data saved successfully (test mode)');
+            } else {
+                // Normal mode: Save to Firestore
+                await db.collection('calendar_data').doc(currentEditingDate).set(dataToSave, { merge: true });
+                showNotification('Day data saved successfully');
+            }
+            
+            modal.style.display = 'none';
+            
+            // Refresh the view
+            generateCalendarUI(parseInt(document.getElementById('year-input').value, 10));
+            if (currentView === 'month') {
+                generateMonthView(currentYear, currentMonth);
+            }
+        });
+        
+        document.getElementById('clear-data-btn').addEventListener('click', async () => {
+            if (confirm("Clear all data for this day?")) {
+                if (testMode) {
+                    // Test mode: Just update local state
+                    delete localCalendarData[currentEditingDate];
+                    showNotification('Day data cleared (test mode)');
+                } else {
+                    // Normal mode: Delete from Firestore
+                    await db.collection('calendar_data').doc(currentEditingDate).delete();
+                    showNotification('Day data cleared');
+                }
+                modal.style.display = 'none';
+                
+                // Refresh the view
+                generateCalendarUI(parseInt(document.getElementById('year-input').value, 10));
+                if (currentView === 'month') {
+                    generateMonthView(currentYear, currentMonth);
+                }
+            }
+        });
+        document.getElementById('close-modal-btn').addEventListener('click', () => modal.style.display = 'none');
+
+        // --- SUMMARY LOGIC ---
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        //const summaryMonthFilter = document.getElementById('summary-month-filter');
+        summaryMonthFilter.innerHTML = '<option value="all">Full Year</option>';
+        monthNames.forEach((name, i) => summaryMonthFilter.innerHTML += `<option value="${i}">${name}</option>`);
+
+        async function generateYearlySummary(year) {
+            const eventTotals = {};
+            const activityTotals = {};
+            
+            // Initialize totals
+            Object.keys(localEventTypes).forEach(id => {
+                if (localEventTypes[id].event_summarize_check) {
+                    eventTotals[id] = 0;
+                }
+            });
+            
+            Object.keys(localActivities).forEach(id => {
+                activityTotals[id] = { totalValue: 0, totalResult: 0 };
+            });
+
+            for (let i = 0; i < 12; i++) {
+                const summaryDocId = `${year}-${i}`;
+                let multipliers = {};
+                
+                if (!testMode) {
+                    const summaryDoc = await db.collection('summary_data').doc(summaryDocId).get();
+                    multipliers = summaryDoc.exists ? summaryDoc.data().multipliers : {};
+                }
+
+                const monthlyEventTotals = {};
+                const monthlyActivityTotals = {};
+                
+                Object.keys(localEventTypes).forEach(id => {
+                    if (localEventTypes[id].event_summarize_check) {
+                        monthlyEventTotals[id] = 0;
+                    }
+                });
+                
+                Object.keys(localActivities).forEach(id => { 
+                    monthlyActivityTotals[id] = { count: 0, value: 0 }; 
+                });
+
+                Object.entries(localCalendarData).forEach(([date, data]) => {
+                    const dataDate = new Date(date + "T00:00:00");
+                    if (data.year === year && dataDate.getMonth() === i) {
+                        // Count events
+                        if (data.eventType && localEventTypes[data.eventType] && localEventTypes[data.eventType].event_summarize_check) {
+                            monthlyEventTotals[data.eventType] = (monthlyEventTotals[data.eventType] || 0) + 1;
+                        }
+                        
+                        // Count activities
+                        if (data.activities) {
+                            for (const id in data.activities) {
+                                if (monthlyActivityTotals[id]) {
+                                    monthlyActivityTotals[id].count++;
+                                    if (localActivities[id]?.activity_type === 'quantity') {
+                                        monthlyActivityTotals[id].value += data.activities[id].value || 0;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // Add monthly totals to yearly totals
+                Object.keys(monthlyEventTotals).forEach(id => {
+                    eventTotals[id] += monthlyEventTotals[id];
+                });
+                
+                Object.keys(localActivities).forEach(id => {
+                    const activity = localActivities[id];
+                    const monthlyData = monthlyActivityTotals[id];
+                    const multiplier = multipliers[id] || 0;
+                    const baseValue = activity.activity_type === 'quantity' ? monthlyData.value : monthlyData.count;
+
+                    activityTotals[id].totalValue += baseValue;
+                    activityTotals[id].totalResult += baseValue * multiplier;
+                });
+            }
+            
+            let html = `<h3>Summary for Year ${year}</h3>`;
+            
+            // Event Summary
+            html += `<h4>Event Summary</h4><table><thead><tr><th>Event</th><th>Total Days</th></tr></thead><tbody>`;
+            Object.values(localEventTypes).forEach(event => {
+                if (event.event_summarize_check) {
+                    html += `<tr><td>${event.name}</td><td>${eventTotals[event.id] || 0}</td></tr>`;
+                }
+            });
+            html += '</tbody></table>';
+            
+            // Activity Summary
+            html += `<h4>Activity Summary</h4><table class="summary-table"><thead><tr><th>Activity</th><th class="total-col">Total</th><th class="amount-col">Total Amount (₹)</th></tr></thead><tbody>`;
+            Object.values(localActivities).forEach(activity => {
+                const totals = activityTotals[activity.id];
+                const unit = activity.activity_unit || (activity.activity_type === 'boolean' ? 'times' : 'units');
+                const displayValue = activity.activity_type === 'quantity' ? `${totals.totalValue.toFixed(2)} ${unit}` : `${totals.totalValue} ${unit}`;
+                html += `<tr><td>${activity.name}</td><td class="total-col">${displayValue}</td><td class="amount-col">₹ ${totals.totalResult.toFixed(2)}</td></tr>`;
+            });
+            html += '</tbody></table>';
+            document.getElementById('summary-output').innerHTML = html;
+            document.getElementById('save-summary-btn').style.display = 'none';
+        }
+
+        document.getElementById('generate-summary-btn').addEventListener('click', async () => {
+            const saveSummaryBtn = document.getElementById('save-summary-btn');
+            const period = summaryPeriodFilter.value;
+            const monthIndex = summaryMonthFilter.value;
+            const year = parseInt(document.getElementById('year-input').value, 10);
+
+            if (period === 'yearly') {
+                await generateYearlySummary(year);
+                return;
+            }
+            
+            // Monthly summary
+            const summaryDocId = `${year}-${monthIndex}`;
+            let savedMultipliers = {};
+            
+            if (!testMode) {
+                const summaryDoc = await db.collection('summary_data').doc(summaryDocId).get();
+                savedMultipliers = summaryDoc.exists ? summaryDoc.data().multipliers : {};
+            }
+
+            const eventTotals = {};
+            const activityTotals = {};
+            Object.keys(localActivities).forEach(id => { activityTotals[id] = { count: 0, value: 0 }; });
+
+            Object.entries(localCalendarData).forEach(([date, data]) => {
+                if (data.year !== year) return;
+                const dataDate = new Date(date + "T00:00:00");
+                if (dataDate.getMonth() !== parseInt(monthIndex)) return;
+
+                if (data.eventType && localEventTypes[data.eventType] && localEventTypes[data.eventType].event_summarize_check) {
+                    eventTotals[data.eventType] = (eventTotals[data.eventType] || 0) + 1;
+                }
+                
+                if (data.activities) {
+                    for (const id in data.activities) {
+                        if (data.activities[id] && activityTotals[id]) {
+                            activityTotals[id].count++;
+                            if (localActivities[id]?.activity_type === 'quantity') {
+                                activityTotals[id].value += data.activities[id].value || 0;
+                            }
+                        }
+                    }
+                }
+            });
+
+            let html = `<h3>Summary for ${monthNames[monthIndex]} ${year}</h3>`;
+            html += `<h4>Event Summary</h4><table><thead><tr><th>Event</th><th>Total Days</th></tr></thead><tbody>`;
+            Object.values(localEventTypes).forEach(event => {
+                if (event.event_summarize_check) {
+                    html += `<tr><td>${event.name}</td><td>${eventTotals[event.id] || 0}</td></tr>`;
+                }
+            });
+            html += `</tbody></table><h4>Activity Summary</h4><table class="summary-table"><thead><tr><th>Activity</th><th class="total-col">Total</th><th class="rate-col">Rate (₹)</th><th class="amount-col">Total Amount (₹)</th></tr></thead><tbody>`;
+            Object.values(localActivities).forEach(activity => {
+                const total = activityTotals[activity.id];
+                const unit = activity.activity_unit || (activity.activity_type === 'boolean' ? 'times' : 'units');
+                const displayValue = activity.activity_type === 'quantity' ? `${total.value.toFixed(2)} ${unit}` : `${total.count} ${unit}`;
+                const dataValue = activity.activity_type === 'quantity' ? total.value : total.count;
+                const savedValue = savedMultipliers[activity.id] || '';
+                const result = savedValue ? `₹ ${(parseFloat(savedValue) * dataValue).toFixed(2)}` : '';
+
+                html += `<tr><td>${activity.name}</td><td class="total-col">${displayValue}</td>
+                    <td class="rate-col"><input type="number" class="multiplier" data-activity-id="${activity.id}" data-base-value="${dataValue}" value="${savedValue}" placeholder="e.g., price"></td>
+                    <td class="amount-col result">${result}</td></tr>`;
+            });
+            html += '</tbody></table>';
+            document.getElementById('summary-output').innerHTML = html;
+            saveSummaryBtn.style.display = testMode ? 'none' : 'inline-block';
+        });
+
+        document.getElementById('summary-output').addEventListener('input', e => {
+            if (e.target.classList.contains('multiplier')) {
+                const baseValue = parseFloat(e.target.dataset.baseValue);
+                const multiplier = parseFloat(e.target.value) || 0;
+                e.target.parentElement.nextElementSibling.textContent = `₹ ${(baseValue * multiplier).toFixed(2)}`;
+            }
+        });
+
+        document.getElementById('save-summary-btn').addEventListener('click', async () => {
+            if (testMode) {
+                showNotification('Cannot save in test mode', true);
+                return;
+            }
+            
+            const year = parseInt(document.getElementById('year-input').value, 10);
+            const monthIndex = summaryMonthFilter.value;
+            const summaryDocId = `${year}-${monthIndex}`;
+            
+            const multipliersToSave = {};
+            document.querySelectorAll('#summary-output .multiplier').forEach(input => {
+                const activityId = input.dataset.activityId;
+                const value = input.value;
+                if (activityId && value.trim() !== '') {
+                    multipliersToSave[activityId] = parseFloat(value);
+                }
+            });
+
+            if (Object.keys(multipliersToSave).length > 0) {
+                await db.collection('summary_data').doc(summaryDocId).set({ multipliers: multipliersToSave });
+                showNotification('Summary multipliers have been saved!');
+            } else {
+                await db.collection('summary_data').doc(summaryDocId).delete();
+                showNotification('Summary multipliers cleared!');
+            }
+        });
+
+        // --- INITIAL LOAD ---
+        document.getElementById('year-input').addEventListener('change', e => {
+            const year = parseInt(e.target.value, 10);
+            if (!testMode) {
+                listenForYearData(year);
+            }
+            if (currentView === 'month') {
+                generateMonthView(year, currentMonth);
+            }
+        });
+        
+        // Set initial values
+        currentYear = parseInt(document.getElementById('year-input').value, 10);
+        if (!testMode) {
+            listenForYearData(currentYear);
+        }
+    }
+});
+</script>
+
+</body>
+</html>
