@@ -241,16 +241,16 @@
             border: 2px solid rgba(255, 255, 255, 0.7);
         }
 
-        /* Year Grid Styles - Fixed with proper scrolling */
+        /* Year Grid Styles - FIXED with robust solution */
         .year-view {
             display: grid;
-            grid-template-columns: repeat(4, 1fr); /* Fixed to 4 columns */
-            gap: 15px;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(3, 1fr); /* 3 rows for 12 months */
+            gap: 20px;
             flex: 1;
             overflow-y: auto;
-            padding: 10px;
-            height: 0; /* This allows flex to control height */
-            min-height: 0; /* Important for flex children to scroll */
+            padding: 15px;
+            height: 100%; /* Use full available height */
         }
         
         .month {
@@ -261,8 +261,9 @@
             transition: var(--transition);
             cursor: pointer;
             border: 1px solid #f0f0f0;
-            height: fit-content;
             min-height: 280px;
+            display: flex;
+            flex-direction: column;
         }
         
         .month:hover {
@@ -279,6 +280,7 @@
             background: linear-gradient(135deg, #f8f9fa, #e9ecef);
             border-radius: var(--border-radius);
             font-weight: 600;
+            flex-shrink: 0; /* Prevent header from shrinking */
         }
         
         .days-header, .days-grid {
@@ -296,7 +298,6 @@
         }
         
         .day {
-            height: 40px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -308,6 +309,8 @@
             font-size: 15px;
             font-weight: 500;
             border: 2px solid transparent;
+            aspect-ratio: 1; /* Square cells */
+            min-height: 30px;
         }
 
         .day:hover {
@@ -596,16 +599,18 @@
             border-radius: 4px;
         }
         
-        /* Responsive Design - Updated for 4-column layout */
+        /* Responsive Design - Updated for fixed layout */
         @media (max-width: 1400px) {
             .year-view {
-                grid-template-columns: repeat(3, 1fr); /* 3 columns on medium screens */
+                grid-template-columns: repeat(3, 1fr);
+                grid-template-rows: repeat(4, 1fr); /* 4 rows for 12 months */
             }
         }
         
         @media (max-width: 1100px) {
             .year-view {
-                grid-template-columns: repeat(2, 1fr); /* 2 columns on smaller screens */
+                grid-template-columns: repeat(2, 1fr);
+                grid-template-rows: repeat(6, 1fr); /* 6 rows for 12 months */
             }
         }
         
@@ -657,7 +662,8 @@
             }
             
             .year-view {
-                grid-template-columns: 1fr; /* 1 column on mobile */
+                grid-template-columns: 1fr;
+                grid-template-rows: repeat(12, auto); /* 12 rows for 12 months */
             }
             
             .month-view-grid, .week-view-grid {
@@ -1161,7 +1167,7 @@ document.addEventListener('DOMContentLoaded', function() {
             generateWeekView(currentWeekStart);
         });
 
-        // Year input change handler - FIXED
+        // Year input change handler
         yearInput.addEventListener('change', function() {
             const year = parseInt(this.value, 10);
             if (year >= 2000 && year <= 2100) {
