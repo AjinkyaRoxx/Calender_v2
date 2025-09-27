@@ -241,14 +241,16 @@
             border: 2px solid rgba(255, 255, 255, 0.7);
         }
 
-        /* Year Grid Styles - Updated to 4 months per row */
-        .year-grid {
+        /* Year Grid Styles - Fixed with proper scrolling */
+        .year-view {
             display: grid;
-            grid-template-columns: repeat(4, 1fr); /* Changed from 3 to 4 */
+            grid-template-columns: repeat(4, 1fr); /* Fixed to 4 columns */
             gap: 15px;
             flex: 1;
             overflow-y: auto;
-            padding-right: 10px;
+            padding: 10px;
+            height: 0; /* This allows flex to control height */
+            min-height: 0; /* Important for flex children to scroll */
         }
         
         .month {
@@ -260,7 +262,7 @@
             cursor: pointer;
             border: 1px solid #f0f0f0;
             height: fit-content;
-            min-height: 280px; /* Added for consistency */
+            min-height: 280px;
         }
         
         .month:hover {
@@ -359,6 +361,8 @@
             display: none;
             flex: 1;
             overflow-y: auto;
+            height: 0; /* Important for flex scrolling */
+            min-height: 0;
         }
         
         .month-view-header, .week-view-header {
@@ -594,13 +598,13 @@
         
         /* Responsive Design - Updated for 4-column layout */
         @media (max-width: 1400px) {
-            .year-grid {
+            .year-view {
                 grid-template-columns: repeat(3, 1fr); /* 3 columns on medium screens */
             }
         }
         
         @media (max-width: 1100px) {
-            .year-grid {
+            .year-view {
                 grid-template-columns: repeat(2, 1fr); /* 2 columns on smaller screens */
             }
         }
@@ -652,7 +656,7 @@
                 flex-wrap: wrap;
             }
             
-            .year-grid {
+            .year-view {
                 grid-template-columns: 1fr; /* 1 column on mobile */
             }
             
@@ -1050,13 +1054,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const yearQuickNav = document.getElementById('year-quick-nav');
         const backToYear = document.getElementById('back-to-year');
         const generateSummaryBtn = document.getElementById('generate-summary-btn');
+        const yearInput = document.getElementById('year-input');
 
         let localEventTypes = {}, localActivities = {}, localCalendarData = {};
         let currentEditingDate = null;
         let editingEventId = null, editingActivityId = null;
         let currentView = 'year';
         let currentMonth = new Date().getMonth();
-        let currentYear = new Date().getFullYear();
+        let currentYear = parseInt(yearInput.value, 10);
         let currentWeekStart = getWeekStartDate(new Date());
 
         // Set up view toggles
@@ -1130,7 +1135,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (currentMonth < 0) {
                 currentMonth = 11;
                 currentYear--;
-                document.getElementById('year-input').value = currentYear;
+                yearInput.value = currentYear;
             }
             generateMonthView(currentYear, currentMonth);
         });
@@ -1140,7 +1145,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (currentMonth > 11) {
                 currentMonth = 0;
                 currentYear++;
-                document.getElementById('year-input').value = currentYear;
+                yearInput.value = currentYear;
             }
             generateMonthView(currentYear, currentMonth);
         });
@@ -1154,6 +1159,24 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('next-week-btn').addEventListener('click', () => {
             currentWeekStart.setDate(currentWeekStart.getDate() + 7);
             generateWeekView(currentWeekStart);
+        });
+
+        // Year input change handler - FIXED
+        yearInput.addEventListener('change', function() {
+            const year = parseInt(this.value, 10);
+            if (year >= 2000 && year <= 2100) {
+                currentYear = year;
+                if (currentView === 'year') {
+                    generateCalendarUI(year);
+                } else if (currentView === 'month') {
+                    generateMonthView(year, currentMonth);
+                } else if (currentView === 'week') {
+                    generateWeekView(currentWeekStart);
+                }
+            } else {
+                this.value = currentYear;
+                showNotification('Please enter a year between 2000 and 2100', true);
+            }
         });
 
         // Summary period filter
@@ -1903,7 +1926,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Summary generation
         generateSummaryBtn.addEventListener('click', () => {
             const period = summaryPeriodFilter.value;
-            const year = parseInt(document.getElementById('year-input').value, 10);
+            const year = parseInt(yearInput.value, 10);
             
             if (period === 'yearly') {
                 generateYearlySummary(year);
@@ -2154,7 +2177,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Set initial values
-        currentYear = parseInt(document.getElementById('year-input').value, 10);
         generateCalendarUI(currentYear);
         yearQuickNav.style.display = 'flex';
         
