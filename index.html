@@ -201,6 +201,14 @@
             background: #2bb8e0;
         }
         
+        .rate-history-btn {
+            background: var(--accent) !important;
+        }
+        
+        .rate-history-btn:hover {
+            background: #5a0d9b !important;
+        }
+        
         .item-list {
             margin-top: 12px;
             display: flex;
@@ -233,10 +241,10 @@
             border: 2px solid rgba(255, 255, 255, 0.7);
         }
 
-        /* Year Grid Styles */
+        /* Year Grid Styles - Updated to 4 months per row */
         .year-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(4, 1fr); /* Changed from 3 to 4 */
             gap: 15px;
             flex: 1;
             overflow-y: auto;
@@ -252,6 +260,7 @@
             cursor: pointer;
             border: 1px solid #f0f0f0;
             height: fit-content;
+            min-height: 280px; /* Added for consistency */
         }
         
         .month:hover {
@@ -583,10 +592,16 @@
             border-radius: 4px;
         }
         
-        /* Responsive Design */
-        @media (max-width: 1200px) {
+        /* Responsive Design - Updated for 4-column layout */
+        @media (max-width: 1400px) {
             .year-grid {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(3, 1fr); /* 3 columns on medium screens */
+            }
+        }
+        
+        @media (max-width: 1100px) {
+            .year-grid {
+                grid-template-columns: repeat(2, 1fr); /* 2 columns on smaller screens */
             }
         }
         
@@ -638,7 +653,7 @@
             }
             
             .year-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: 1fr; /* 1 column on mobile */
             }
             
             .month-view-grid, .week-view-grid {
@@ -776,6 +791,13 @@
             padding: 8px;
             background: #f8f9fa;
             border-radius: 8px;
+        }
+        
+        /* Style for month input */
+        input[type="month"] {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
         }
     </style>
 </head>
@@ -1015,15 +1037,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Main application logic
     function runApp() {
-        let localEventTypes = {}, localActivities = {}, localCalendarData = {};
-        let currentEditingDate = null;
-        let editingEventId = null, editingActivityId = null;
-        let currentView = 'year';
-        let currentMonth = new Date().getMonth();
-        let currentYear = new Date().getFullYear();
-        let currentWeekStart = getWeekStartDate(new Date());
-
-        // View toggle logic
+        // Get DOM elements first
         const yearViewBtn = document.getElementById('year-view-btn');
         const monthViewBtn = document.getElementById('month-view-btn');
         const weekViewBtn = document.getElementById('week-view-btn');
@@ -1036,15 +1050,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const yearQuickNav = document.getElementById('year-quick-nav');
         const backToYear = document.getElementById('back-to-year');
         const generateSummaryBtn = document.getElementById('generate-summary-btn');
-        const activityRateInput = document.getElementById('activity-rate');
 
-        // Helper function to get the start of the week (Sunday)
-        function getWeekStartDate(date) {
-            const d = new Date(date);
-            const day = d.getDay();
-            const diff = d.getDate() - day;
-            return new Date(d.setDate(diff));
-        }
+        let localEventTypes = {}, localActivities = {}, localCalendarData = {};
+        let currentEditingDate = null;
+        let editingEventId = null, editingActivityId = null;
+        let currentView = 'year';
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+        let currentWeekStart = getWeekStartDate(new Date());
 
         // Set up view toggles
         yearViewBtn.addEventListener('click', () => {
@@ -1242,10 +1255,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Activity type management
+        // Activity type management with monthly rates
         const activityNameInput = document.getElementById('activity-name');
         const activityTypeSelect = document.getElementById('activity-type');
         const activityUnitInput = document.getElementById('activity-unit');
+        const activityRateInput = document.getElementById('activity-rate');
         const addActivityBtn = document.getElementById('add-activity-btn');
         const activityListContainer = document.getElementById('activity-list');
 
@@ -1278,18 +1292,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 name: name, 
                 activity_type: activityTypeSelect.value, 
                 activity_unit: activityUnitInput.value.trim(),
-                activity_rate: parseFloat(activityRateInput.value) || 0
+                // Store rate history with current rate
+                rate_history: {
+                    [getCurrentMonthYear()]: parseFloat(activityRateInput.value) || 0
+                },
+                current_rate: parseFloat(activityRateInput.value) || 0
             };
             
             if (testMode) {
-                // Test mode: Just update local state
                 const id = editingActivityId || 'test-' + Date.now();
                 localActivities[id] = { ...data, id: id };
                 updateActivityList();
                 resetActivityForm();
                 showNotification(`Activity "${name}" ${editingActivityId ? 'updated' : 'added'} successfully (test mode)`);
             } else {
-                // Normal mode: Save to Firestore
                 try {
                     const docRef = editingActivityId ? db.collection('activity_types').doc(editingActivityId) : db.collection('activity_types').doc();
                     await docRef.set(data, { merge: true });
@@ -1305,11 +1321,12 @@ document.addEventListener('DOMContentLoaded', function() {
             activityListContainer.innerHTML = '';
             Object.values(localActivities).forEach(activity => {
                 const unitText = activity.activity_unit ? `, ${activity.activity_unit}` : '';
-                const rateText = activity.activity_rate ? `, ₹${activity.activity_rate}` : '';
+                const rateText = activity.current_rate ? `, ₹${activity.current_rate}` : '';
                 activityListContainer.innerHTML += `
                     <div class="list-item">
                         <span>${activity.name} (${activity.activity_type}${unitText}${rateText})</span>
                         <button class="edit-btn" data-id="${activity.id}"><i class="fas fa-edit"></i> Edit</button>
+                        <button class="rate-history-btn" data-id="${activity.id}"><i class="fas fa-history"></i> Rates</button>
                         <button class="delete-btn" data-id="${activity.id}"><i class="fas fa-trash"></i> Delete</button>
                     </div>
                 `;
@@ -1326,7 +1343,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 activityTypeSelect.value = activity.activity_type;
                 addActivityBtn.innerHTML = '<i class="fas fa-edit"></i> Update Activity';
                 activityUnitInput.value = activity.activity_unit || '';
-                activityRateInput.value = activity.activity_rate || '';
+                activityRateInput.value = activity.current_rate || '';
                 activityTypeSelect.dispatchEvent(new Event('change'));
             } else if (e.target.classList.contains('delete-btn') || e.target.parentElement.classList.contains('delete-btn')) {
                 const btn = e.target.classList.contains('delete-btn') ? e.target : e.target.parentElement;
@@ -1346,38 +1363,94 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                     }
                 }
+            } else if (e.target.classList.contains('rate-history-btn') || e.target.parentElement.classList.contains('rate-history-btn')) {
+                const btn = e.target.classList.contains('rate-history-btn') ? e.target : e.target.parentElement;
+                const id = btn.dataset.id;
+                showRateHistoryModal(id);
             }
         });
-        
-        // Initialize with sample data in test mode
-        if (testMode) {
-            localEventTypes = {
-                'test-event-1': { id: 'test-event-1', name: 'Meeting', event_type_color: '#ffc107', event_summarize_check: true },
-                'test-event-2': { id: 'test-event-2', name: 'Birthday', event_type_color: '#e91e63', event_summarize_check: false },
-                'test-event-3': { id: 'test-event-3', name: 'Holiday', event_type_color: '#4caf50', event_summarize_check: true }
-            };
+
+        // Rate History Modal
+        function showRateHistoryModal(activityId) {
+            const activity = localActivities[activityId];
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.display = 'flex';
             
-            localActivities = {
-                'test-activity-1': { id: 'test-activity-1', name: 'Exercise', activity_type: 'boolean', activity_unit: 'Days', activity_rate: 0 },
-                'test-activity-2': { id: 'test-activity-2', name: 'Water Intake', activity_type: 'quantity', activity_unit: 'Liters', activity_rate: 10 },
-                'test-activity-3': { id: 'test-activity-3', name: 'Reading', activity_type: 'quantity', activity_unit: 'Pages', activity_rate: 5 }
-            };
+            let rateHistoryHtml = '';
+            if (activity.rate_history) {
+                Object.entries(activity.rate_history).forEach(([monthYear, rate]) => {
+                    rateHistoryHtml += `
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; padding: 8px; background: #f8f9fa; border-radius: 5px;">
+                            <span>${monthYear}</span>
+                            <span>₹${rate.toFixed(2)}</span>
+                        </div>
+                    `;
+                });
+            }
             
-            // Add some sample calendar data
-            const today = new Date();
-            const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-            localCalendarData[todayString] = {
-                year: today.getFullYear(),
-                eventType: 'test-event-1',
-                eventNote: 'Team meeting at 10 AM',
-                activities: {
-                    'test-activity-1': true,
-                    'test-activity-2': { value: 2.5 }
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h3><i class="fas fa-history"></i> Rate History for ${activity.name}</h3>
+                    <div id="rate-history-list">
+                        ${rateHistoryHtml || '<p>No rate history found.</p>'}
+                    </div>
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label for="new-rate-date">Effective From (Month-Year):</label>
+                        <input type="month" id="new-rate-date" value="${getCurrentMonthYear()}">
+                    </div>
+                    <div class="form-group">
+                        <label for="new-rate-value">New Rate (₹):</label>
+                        <input type="number" id="new-rate-value" placeholder="0.00" step="0.01" min="0" value="${activity.current_rate || 0}">
+                    </div>
+                    <div style="margin-top: 15px; text-align: right;">
+                        <button id="save-new-rate-btn"><i class="fas fa-save"></i> Save New Rate</button>
+                        <button id="close-rate-modal-btn" style="background-color: var(--gray);"><i class="fas fa-times"></i> Close</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Save new rate
+            document.getElementById('save-new-rate-btn').addEventListener('click', async () => {
+                const newDate = document.getElementById('new-rate-date').value;
+                const newRate = parseFloat(document.getElementById('new-rate-value').value) || 0;
+                
+                if (!newDate) {
+                    showNotification('Please select a date', true);
+                    return;
                 }
-            };
+                
+                // Update activity with new rate
+                activity.rate_history = activity.rate_history || {};
+                activity.rate_history[newDate] = newRate;
+                activity.current_rate = newRate;
+                
+                if (testMode) {
+                    localActivities[activityId] = activity;
+                    updateActivityList();
+                    showNotification('Rate updated successfully (test mode)');
+                } else {
+                    try {
+                        await db.collection('activity_types').doc(activityId).update({
+                            rate_history: activity.rate_history,
+                            current_rate: newRate
+                        });
+                        updateActivityList();
+                        showNotification('Rate updated successfully');
+                    } catch (error) {
+                        showNotification('Error updating rate: ' + error.message, true);
+                    }
+                }
+                
+                document.body.removeChild(modal);
+            });
             
-            updateEventList();
-            updateActivityList();
+            // Close modal
+            document.getElementById('close-rate-modal-btn').addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
         }
 
         // Check if color is dark for text contrast
@@ -1844,7 +1917,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Generate yearly summary
+        // Generate yearly summary with monthly rates
         function generateYearlySummary(year) {
             const eventTotals = {};
             const activityTotals = {};
@@ -1860,36 +1933,54 @@ document.addEventListener('DOMContentLoaded', function() {
                 activityTotals[activity.id] = {
                     count: 0,
                     value: 0,
-                    rate: activity.activity_rate || 0
+                    monthlyBreakdown: {} // Track by month
                 };
             });
             
-            // Calculate totals
-            Object.values(localCalendarData).forEach(dayData => {
+            // Calculate totals with monthly breakdown
+            Object.entries(localCalendarData).forEach(([dateString, dayData]) => {
                 if (dayData.year === year) {
+                    const date = new Date(dateString + 'T00:00:00');
+                    const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                    
                     // Count events
                     if (dayData.eventType && localEventTypes[dayData.eventType] && localEventTypes[dayData.eventType].event_summarize_check) {
                         eventTotals[dayData.eventType] = (eventTotals[dayData.eventType] || 0) + 1;
                     }
                     
-                    // Count activities
+                    // Count activities with monthly breakdown
                     if (dayData.activities) {
                         Object.entries(dayData.activities).forEach(([activityId, activityData]) => {
                             if (localActivities[activityId]) {
                                 const activity = localActivities[activityId];
-                                if (activity.activity_type === 'quantity') {
-                                    activityTotals[activityId].value += activityData.value || 0;
-                                    activityTotals[activityId].count += 1;
-                                } else {
-                                    activityTotals[activityId].count += 1;
+                                const rate = getActivityRateForDate(activity, dateString);
+                                
+                                // Initialize monthly breakdown if not exists
+                                if (!activityTotals[activityId].monthlyBreakdown[monthYear]) {
+                                    activityTotals[activityId].monthlyBreakdown[monthYear] = {
+                                        count: 0,
+                                        value: 0,
+                                        rate: rate
+                                    };
                                 }
+                                
+                                const monthly = activityTotals[activityId].monthlyBreakdown[monthYear];
+                                
+                                if (activity.activity_type === 'quantity') {
+                                    monthly.value += activityData.value || 0;
+                                    monthly.count += 1;
+                                    activityTotals[activityId].value += activityData.value || 0;
+                                } else {
+                                    monthly.count += 1;
+                                }
+                                activityTotals[activityId].count += 1;
                             }
                         });
                     }
                 }
             });
             
-            // Generate HTML
+            // Generate HTML with monthly breakdown
             let html = `<h3>Summary for Year ${year}</h3>`;
             
             // Event Summary
@@ -1901,25 +1992,48 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             html += '</tbody></table>';
             
-            // Activity Summary
-            html += `<h4>Activity Summary</h4><table class="summary-table"><thead><tr><th>Activity</th><th class="total-col">Total</th><th class="rate-col">Rate (₹)</th><th class="amount-col">Total Amount (₹)</th></tr></thead><tbody>`;
+            // Activity Summary with monthly breakdown
+            html += `<h4>Activity Summary</h4>`;
+            
             Object.values(localActivities).forEach(activity => {
-                const totals = activityTotals[activity.id] || { count: 0, value: 0, rate: 0 };
+                const totals = activityTotals[activity.id] || { count: 0, value: 0, monthlyBreakdown: {} };
                 const unit = activity.activity_unit || (activity.activity_type === 'boolean' ? 'times' : 'units');
-                const displayValue = activity.activity_type === 'quantity' ? 
-                    `${totals.value.toFixed(2)} ${unit}` : `${totals.count} ${unit}`;
                 
-                const amount = activity.activity_type === 'quantity' ? 
-                    (totals.value * totals.rate) : (totals.count * totals.rate);
+                html += `<h5>${activity.name}</h5><table class="summary-table"><thead><tr><th>Month</th><th class="total-col">Total</th><th class="rate-col">Rate (₹)</th><th class="amount-col">Amount (₹)</th></tr></thead><tbody>`;
                 
-                html += `<tr>
-                    <td>${activity.name}</td>
-                    <td class="total-col">${displayValue}</td>
-                    <td class="rate-col">${totals.rate.toFixed(2)}</td>
-                    <td class="amount-col">₹ ${amount.toFixed(2)}</td>
+                let yearlyTotalAmount = 0;
+                
+                // Sort months chronologically
+                const sortedMonths = Object.keys(totals.monthlyBreakdown).sort();
+                
+                sortedMonths.forEach(monthYear => {
+                    const monthly = totals.monthlyBreakdown[monthYear];
+                    const displayValue = activity.activity_type === 'quantity' ? 
+                        `${monthly.value.toFixed(2)} ${unit}` : `${monthly.count} ${unit}`;
+                    
+                    const amount = activity.activity_type === 'quantity' ? 
+                        (monthly.value * monthly.rate) : (monthly.count * monthly.rate);
+                    
+                    yearlyTotalAmount += amount;
+                    
+                    html += `<tr>
+                        <td>${monthYear}</td>
+                        <td class="total-col">${displayValue}</td>
+                        <td class="rate-col">${monthly.rate.toFixed(2)}</td>
+                        <td class="amount-col">₹ ${amount.toFixed(2)}</td>
+                    </tr>`;
+                });
+                
+                // Yearly total
+                html += `<tr style="font-weight: bold; background-color: #f8f9fa;">
+                    <td>Year Total</td>
+                    <td class="total-col">${activity.activity_type === 'quantity' ? `${totals.value.toFixed(2)} ${unit}` : `${totals.count} ${unit}`}</td>
+                    <td class="rate-col">-</td>
+                    <td class="amount-col">₹ ${yearlyTotalAmount.toFixed(2)}</td>
                 </tr>`;
+                
+                html += '</tbody></table>';
             });
-            html += '</tbody></table>';
             
             document.getElementById('summary-output').innerHTML = html;
             document.getElementById('save-summary-btn').style.display = 'none';
@@ -1941,7 +2055,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 activityTotals[activity.id] = {
                     count: 0,
                     value: 0,
-                    rate: activity.activity_rate || 0
+                    rate: getActivityRateForDate(activity, `${year}-${String(month + 1).padStart(2, '0')}-01`) // Use rate for the month
                 };
             });
             
@@ -2008,18 +2122,37 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('save-summary-btn').style.display = 'none';
         }
 
-        // Initialize the app
-        document.getElementById('year-input').addEventListener('change', e => {
-            const year = parseInt(e.target.value, 10);
-            currentYear = year;
-            generateCalendarUI(year);
-            if (currentView === 'month') {
-                generateMonthView(year, currentMonth);
-            } else if (currentView === 'week') {
-                generateWeekView(currentWeekStart);
+        // Helper function to get the start of the week (Sunday)
+        function getWeekStartDate(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day;
+            return new Date(d.setDate(diff));
+        }
+
+        // Helper function to get current month-year key (e.g., "2025-03")
+        function getCurrentMonthYear() {
+            const now = new Date();
+            return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        }
+
+        // Function to get rate for a specific date
+        function getActivityRateForDate(activity, dateString) {
+            if (!activity.rate_history) {
+                return activity.current_rate || 0;
             }
-        });
-        
+            
+            const targetDate = new Date(dateString + 'T00:00:00');
+            const targetMonthYear = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
+            
+            // Find the most recent rate that applies to this date
+            const applicableRates = Object.entries(activity.rate_history)
+                .filter(([monthYear]) => monthYear <= targetMonthYear)
+                .sort(([a], [b]) => b.localeCompare(a)); // Sort descending by date
+            
+            return applicableRates.length > 0 ? applicableRates[0][1] : activity.current_rate || 0;
+        }
+
         // Set initial values
         currentYear = parseInt(document.getElementById('year-input').value, 10);
         generateCalendarUI(currentYear);
@@ -2034,6 +2167,67 @@ document.addEventListener('DOMContentLoaded', function() {
         monthNames.forEach((name, index) => {
             summaryMonthFilter.innerHTML += `<option value="${index}">${name}</option>`;
         });
+
+        // Initialize with sample data in test mode
+        if (testMode) {
+            localEventTypes = {
+                'test-event-1': { id: 'test-event-1', name: 'Meeting', event_type_color: '#ffc107', event_summarize_check: true },
+                'test-event-2': { id: 'test-event-2', name: 'Birthday', event_type_color: '#e91e63', event_summarize_check: false },
+                'test-event-3': { id: 'test-event-3', name: 'Holiday', event_type_color: '#4caf50', event_summarize_check: true }
+            };
+            
+            localActivities = {
+                'test-activity-1': { 
+                    id: 'test-activity-1', 
+                    name: 'Exercise', 
+                    activity_type: 'boolean', 
+                    activity_unit: 'Days', 
+                    current_rate: 0,
+                    rate_history: {
+                        '2025-01': 0,
+                        '2025-03': 0
+                    }
+                },
+                'test-activity-2': { 
+                    id: 'test-activity-2', 
+                    name: 'Water Intake', 
+                    activity_type: 'quantity', 
+                    activity_unit: 'Liters', 
+                    current_rate: 10,
+                    rate_history: {
+                        '2025-01': 8,
+                        '2025-03': 10
+                    }
+                },
+                'test-activity-3': { 
+                    id: 'test-activity-3', 
+                    name: 'Reading', 
+                    activity_type: 'quantity', 
+                    activity_unit: 'Pages', 
+                    current_rate: 5,
+                    rate_history: {
+                        '2025-01': 5,
+                        '2025-02': 5
+                    }
+                }
+            };
+            
+            // Add some sample calendar data
+            const today = new Date();
+            const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            localCalendarData[todayString] = {
+                year: today.getFullYear(),
+                eventType: 'test-event-1',
+                eventNote: 'Team meeting at 10 AM',
+                activities: {
+                    'test-activity-1': true,
+                    'test-activity-2': { value: 2.5 }
+                }
+            };
+            
+            updateEventList();
+            updateActivityList();
+        }
     }
 });
 </script>
