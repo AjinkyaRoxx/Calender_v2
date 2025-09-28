@@ -1061,6 +1061,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const backToYear = document.getElementById('back-to-year');
         const generateSummaryBtn = document.getElementById('generate-summary-btn');
         const yearInput = document.getElementById('year-input');
+        
+        // Get DOM elements for forms and lists
+        const eventListContainer = document.getElementById('event-list');
+        const activityListContainer = document.getElementById('activity-list');
+        const eventNameInput = document.getElementById('event-type-name');
+        const eventColorInput = document.getElementById('event-type-color');
+        const eventSummarizeCheck = document.getElementById('event-summarize-check');
+        const addEventTypeBtn = document.getElementById('add-event-type-btn');
+        const activityNameInput = document.getElementById('activity-name');
+        const activityTypeSelect = document.getElementById('activity-type');
+        const activityUnitInput = document.getElementById('activity-unit');
+        const activityRateInput = document.getElementById('activity-rate');
+        const addActivityBtn = document.getElementById('add-activity-btn');
 
         let localEventTypes = {}, localActivities = {}, localCalendarData = {};
         let currentEditingDate = null;
@@ -1069,6 +1082,121 @@ document.addEventListener('DOMContentLoaded', function() {
         let currentMonth = new Date().getMonth();
         let currentYear = parseInt(yearInput.value, 10);
         let currentWeekStart = getWeekStartDate(new Date());
+
+        // --- REALTIME FIREBASE LISTENERS ---
+        if (!testMode) {
+            // Listen for event types
+            db.collection('event_types').orderBy("name").onSnapshot(snapshot => {
+                localEventTypes = {};
+                eventListContainer.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    // Ensure backward compatibility with v1 data structure
+                    const eventData = {
+                        id: doc.id,
+                        name: data.name || data.event_name || 'Unnamed Event',
+                        event_type_color: data.event_type_color || '#ffc107',
+                        event_summarize_check: data.event_summarize_check || false
+                    };
+                    localEventTypes[doc.id] = eventData;
+                    
+                    eventListContainer.innerHTML += `
+                        <div class="list-item">
+                            <div class="legend-color-box" style="background-color: ${eventData.event_type_color};"></div>
+                            <span>${eventData.name}${eventData.event_summarize_check ? ' (S)' : ''}</span>
+                            <button class="edit-btn" data-id="${doc.id}"><i class="fas fa-edit"></i> Edit</button>
+                            <button class="delete-btn" data-id="${doc.id}"><i class="fas fa-trash"></i> Delete</button>
+                        </div>
+                    `;
+                });
+                populateEventTypeDropdown();
+                if (currentView === 'year') {
+                    generateCalendarUI(currentYear);
+                }
+            }, error => {
+                console.error('Event types listener error:', error);
+                showNotification('Error loading event types', true);
+            });
+
+            // Listen for activity types  
+            db.collection('activity_types').orderBy("name").onSnapshot(snapshot => {
+                localActivities = {};
+                activityListContainer.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    // Ensure backward compatibility with v1 data structure
+                    const activityData = {
+                        id: doc.id,
+                        name: data.name || data.activity_name || 'Unnamed Activity',
+                        activity_type: data.activity_type || 'boolean',
+                        activity_unit: data.activity_unit || '',
+                        current_rate: data.current_rate || 0,
+                        rate_history: data.rate_history || {}
+                    };
+                    localActivities[doc.id] = activityData;
+                    
+                    const unitText = activityData.activity_unit ? `, ${activityData.activity_unit}` : '';
+                    const rateText = activityData.current_rate ? `, ₹${activityData.current_rate}` : '';
+                    activityListContainer.innerHTML += `
+                        <div class="list-item">
+                            <span>${activityData.name} (${activityData.activity_type}${unitText}${rateText})</span>
+                            <button class="edit-btn" data-id="${doc.id}"><i class="fas fa-edit"></i> Edit</button>
+                            <button class="rate-history-btn" data-id="${doc.id}"><i class="fas fa-history"></i> Rates</button>
+                            <button class="delete-btn" data-id="${doc.id}"><i class="fas fa-trash"></i> Delete</button>
+                        </div>
+                    `;
+                });
+                if (currentView === 'year') {
+                    generateCalendarUI(currentYear);
+                }
+            }, error => {
+                console.error('Activity types listener error:', error);
+                showNotification('Error loading activities', true);
+            });
+
+            // Listen for calendar data with proper error handling
+            function setupCalendarListener(year) {
+                if (window.calendarUnsubscribe) {
+                    window.calendarUnsubscribe(); // Clean up previous listener
+                }
+                
+                window.calendarUnsubscribe = db.collection('calendar_data')
+                    .where('year', '==', year)
+                    .onSnapshot(snapshot => {
+                        localCalendarData = {};
+                        snapshot.forEach(doc => {
+                            localCalendarData[doc.id] = doc.data();
+                        });
+                        
+                        // Refresh the current view
+                        if (currentView === 'year') {
+                            generateCalendarUI(year);
+                        } else if (currentView === 'month') {
+                            generateMonthView(currentYear, currentMonth);
+                        } else if (currentView === 'week') {
+                            generateWeekView(currentWeekStart);
+                        }
+                    }, error => {
+                        console.error('Calendar data listener error:', error);
+                        showNotification('Error loading calendar data', true);
+                    });
+            }
+
+            // Initial setup
+            setupCalendarListener(currentYear);
+            
+            // Update listener when year changes
+            yearInput.addEventListener('change', function() {
+                const year = parseInt(this.value, 10);
+                if (year >= 2000 && year <= 2100) {
+                    currentYear = year;
+                    setupCalendarListener(year);
+                }
+            });
+        } else {
+            // Test mode - use sample data
+            initializeTestData();
+        }
 
         // Set up view toggles
         yearViewBtn.addEventListener('click', () => {
@@ -1179,6 +1307,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (currentView === 'week') {
                     generateWeekView(currentWeekStart);
                 }
+                
+                // Update Firebase listener if not in test mode
+                if (!testMode && window.setupCalendarListener) {
+                    window.setupCalendarListener(year);
+                }
             } else {
                 this.value = currentYear;
                 showNotification('Please enter a year between 2000 and 2100', true);
@@ -1191,12 +1324,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // Event type management
-        const eventNameInput = document.getElementById('event-type-name');
-        const eventColorInput = document.getElementById('event-type-color');
-        const eventSummarizeCheck = document.getElementById('event-summarize-check');
-        const addEventTypeBtn = document.getElementById('add-event-type-btn');
-        const eventListContainer = document.getElementById('event-list');
-
         const resetEventForm = () => {
             editingEventId = null;
             eventNameInput.value = '';
@@ -1285,13 +1412,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // Activity type management with monthly rates
-        const activityNameInput = document.getElementById('activity-name');
-        const activityTypeSelect = document.getElementById('activity-type');
-        const activityUnitInput = document.getElementById('activity-unit');
-        const activityRateInput = document.getElementById('activity-rate');
-        const addActivityBtn = document.getElementById('add-activity-btn');
-        const activityListContainer = document.getElementById('activity-list');
-
         activityTypeSelect.addEventListener('change', () => {
             if (activityTypeSelect.value === 'quantity') {
                 activityUnitInput.placeholder = 'Unit (e.g., kg, L)';
@@ -2182,22 +2302,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return applicableRates.length > 0 ? applicableRates[0][1] : activity.current_rate || 0;
         }
 
-        // Set initial values
-        generateCalendarUI(currentYear);
-        yearQuickNav.style.display = 'flex';
-        
-        // Initialize event type dropdown
-        populateEventTypeDropdown();
-        
-        // Initialize summary month filter
-        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-        summaryMonthFilter.innerHTML = '<option value="all">Full Year</option>';
-        monthNames.forEach((name, index) => {
-            summaryMonthFilter.innerHTML += `<option value="${index}">${name}</option>`;
-        });
-
-        // Initialize with sample data in test mode
-        if (testMode) {
+        // Initialize test data
+        function initializeTestData() {
             localEventTypes = {
                 'test-event-1': { id: 'test-event-1', name: 'Meeting', event_type_color: '#ffc107', event_summarize_check: true },
                 'test-event-2': { id: 'test-event-2', name: 'Birthday', event_type_color: '#e91e63', event_summarize_check: false },
@@ -2255,7 +2361,24 @@ document.addEventListener('DOMContentLoaded', function() {
             
             updateEventList();
             updateActivityList();
+            generateCalendarUI(currentYear);
         }
+
+        // Set initial values
+        if (!testMode) {
+            generateCalendarUI(currentYear);
+        }
+        yearQuickNav.style.display = 'flex';
+        
+        // Initialize event type dropdown
+        populateEventTypeDropdown();
+        
+        // Initialize summary month filter
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        summaryMonthFilter.innerHTML = '<option value="all">Full Year</option>';
+        monthNames.forEach((name, index) => {
+            summaryMonthFilter.innerHTML += `<option value="${index}">${name}</option>`;
+        });
     }
 });
 </script>
